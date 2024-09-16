@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 
 function CreateAccount() {
@@ -22,13 +21,31 @@ function CreateAccount() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    axios.post('http://localhost:5000/api/create_account', formData)
-      .then((response) => {
-        setMessage(response.data.message);
+  
+    fetch('http://127.0.0.1:5000/api/create_account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw err; });
+        }
+        return response.json();
       })
-      .catch((error) => {
-        setMessage(error.response?.data.error || 'An error occurred');
+      .then(data => {
+        setMessage(data.message); // Show success message
+      })
+      .catch(error => {
+        if (error.error) {
+          setMessage(error.error); // Show specific error message from the server
+        } else {
+          setMessage('An unexpected error occurred. Please try again.'); // Generic error message
+        }
+        console.error('Error:', error);
       });
   };
 

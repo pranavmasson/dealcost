@@ -1,34 +1,76 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
 
 function AddCar() {
   const [formData, setFormData] = useState({
-    user_id: '',
-    item_name: '',
-    item_description: '',
-    quantity: 1,
-    price: 0
+    vin: '0',
+    make: '',
+    model: '',
+    trim: '',
+    year: '0000',
+    mileage: '0',
+    color: '',
+    purchase_price: '0',
+    sale_price: '0',
   });
-
   const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    axios.post('http://localhost:5000/api/insert_vehicle', formData)
+    const username = localStorage.getItem('username'); // Retrieve the username from local storage
+
+    console.log('Retrieved username from local storage:', username); // Debugging log
+
+    if (!username || username === 'undefined') {
+      setMessage('User ID is missing or invalid. Please log in again.');
+      return;
+    }
+
+    const vehicleData = {
+      vin: formData.vin,
+      make: formData.make,
+      model: formData.model,
+      trim: formData.trim,
+      year: formData.year,
+      mileage: formData.mileage,
+      color: formData.color,
+      purchase_price: formData.purchase_price,
+      sale_price: formData.sale_price,
+      username: username, // Include username in the payload
+    };
+
+    console.log('Sending vehicle data:', vehicleData); // Debugging log
+
+    fetch('http://127.0.0.1:5000/api/insert_vehicle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(vehicleData),
+    })
       .then((response) => {
-        setMessage(response.data.message);
+        if (!response.ok) {
+          return response.json().then((data) => {
+            throw new Error(data.error || 'Failed to add vehicle');
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setMessage('Vehicle added successfully!');
       })
       .catch((error) => {
-        setMessage(error.response?.data.error || 'An error occurred');
+        console.error('Error:', error);
+        setMessage(error.message || 'An error occurred');
       });
   };
 
@@ -40,56 +82,96 @@ function AddCar() {
         </Typography>
         <form onSubmit={handleSubmit}>
           <TextField
-            label="User ID"
+            label="VIN"
             variant="outlined"
             fullWidth
             margin="normal"
-            name="user_id"
-            value={formData.user_id}
+            name="vin"
+            value={formData.vin}
             onChange={handleChange}
             required
           />
           <TextField
-            label="Vehicle Name"
+            label="Make"
             variant="outlined"
             fullWidth
             margin="normal"
-            name="item_name"
-            value={formData.item_name}
+            name="make"
+            value={formData.make}
             onChange={handleChange}
             required
           />
           <TextField
-            label="Description"
+            label="Model"
             variant="outlined"
             fullWidth
             margin="normal"
-            name="item_description"
-            value={formData.item_description}
+            name="model"
+            value={formData.model}
             onChange={handleChange}
             required
           />
           <TextField
-            label="Quantity"
+            label="Trim"
             variant="outlined"
+            fullWidth
+            margin="normal"
+            name="trim"
+            value={formData.trim}
+            onChange={handleChange}
+          />
+          <TextField
+            label="Year"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            name="year"
+            value={formData.year}
+            onChange={handleChange}
             type="number"
+            required
+          />
+          <TextField
+            label="Mileage"
+            variant="outlined"
             fullWidth
             margin="normal"
-            name="quantity"
-            value={formData.quantity}
+            type="number"
+            name="mileage"
+            value={formData.mileage}
             onChange={handleChange}
             required
           />
           <TextField
-            label="Price"
+            label="Color"
             variant="outlined"
-            type="number"
             fullWidth
             margin="normal"
-            name="price"
-            value={formData.price}
+            name="color"
+            value={formData.color}
             onChange={handleChange}
             required
+          />
+          <TextField
+            label="Purchase Price"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            type="number"
+            name="purchase_price"
+            value={formData.purchase_price}
+            onChange={handleChange}
+            required
+          />
+          <TextField
+            label="Sale Price"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            type="number"
+            name="sale_price"
+            value={formData.sale_price}
+            onChange={handleChange}
           />
           <Button variant="contained" color="primary" type="submit" fullWidth>
             Add Car

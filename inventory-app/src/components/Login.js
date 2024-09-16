@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Container, TextField, Button, Typography, Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom'; 
 
-function Login() {
+function Login({ onLogin }) {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [message, setMessage] = useState('');
+  const navigate = useNavigate(); 
 
   const handleChange = (e) => {
     setFormData({
@@ -16,13 +17,29 @@ function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    axios.post('http://localhost:5000/api/login', formData)
-      .then((response) => {
-        setMessage(response.data.message);
-        // Redirect or handle successful login here
+    fetch('http://127.0.0.1:5000/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          setMessage(data.error);
+        } else {
+          setMessage(data.message);
+          localStorage.setItem('userToken', data.user_id); // Store userToken (user ID) in local storage
+          localStorage.setItem('username', formData.username); // Also store username for reference
+          onLogin(data.user_id);  // Pass the user ID back to App or parent component
+          navigate('/home');  // Redirect to the homepage after successful login
+        }
       })
       .catch((error) => {
-        setMessage(error.response?.data.error || 'An error occurred');
+        setMessage('An error occurred');
+        console.error('Error:', error);
       });
   };
 
