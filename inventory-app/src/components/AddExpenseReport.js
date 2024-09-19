@@ -1,9 +1,12 @@
 import React from 'react';
 import { Container, Typography, Box, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function AddExpenseReport() {
     const navigate = useNavigate();
+    const location = useLocation(); // Get the state passed when navigating from Inventory
+
+    const { vin } = location.state || {}; // Extract the VIN from the state, if passed
 
     const handleScanCopy = () => {
         // Implement functionality for scanning a copy, e.g., navigate to a scan page or open scanner
@@ -12,9 +15,8 @@ function AddExpenseReport() {
     };
 
     const handleEnterDetailsManually = () => {
-        // Implement functionality for entering details manually
-        console.log('Enter Details Manually button clicked');
-        // Example: navigate('/enter-details');
+        // Navigate to the "Enter Details Manually" page and pass the VIN
+        navigate('/enter-details-manually', { state: { vin } });
     };
 
     return (
@@ -34,11 +36,10 @@ function AddExpenseReport() {
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => navigate('/enter-details-manually')}
+                    onClick={handleEnterDetailsManually}
                 >
                     Enter Details Manually
                 </Button>
-
             </Box>
         </Container>
     );

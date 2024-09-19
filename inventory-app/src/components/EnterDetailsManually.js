@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { Container, TextField, Button, MenuItem, Typography, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function EnterDetailsManually() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Extract VIN from the location state, if provided
+  const { vin } = location.state || {};
 
   const [formData, setFormData] = useState({
-    vin: '',
+    vin: vin || '',  // Pre-fill the VIN if passed from previous page, otherwise leave it empty
     category: '',
     notes: '',
     cost: '',
@@ -83,6 +87,7 @@ function EnterDetailsManually() {
             value={formData.vin}
             onChange={handleChange}
             required
+            InputProps={{ readOnly: !!vin }}  // Make VIN field read-only if pre-filled
           />
           <TextField
             select
@@ -180,4 +185,5 @@ function EnterDetailsManually() {
     </Container>
   );
 }
+
 export default EnterDetailsManually;

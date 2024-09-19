@@ -7,8 +7,9 @@ import Inventory from './components/Inventory';
 import Home from './components/Home';
 import AddExpenseReport from './components/AddExpenseReport';
 import EnterDetailsManually from './components/EnterDetailsManually';
-import ViewDeal from './components/ViewDeal';  // Import the ViewDeal component
-import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
+import ViewDeal from './components/ViewDeal';
+import SplashScreen from './components/SplashScreen'; // Import your splash screen component
+import { Toolbar, Typography, Box, Drawer, List, ListItem, ListItemText } from '@mui/material';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -39,49 +40,145 @@ function App() {
   };
 
   return (
-    <div>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            DealCost
-          </Typography>
-          {!isAuthenticated ? (
-            <>
-              <Button color="inherit" onClick={() => navigate('/login')}>Login</Button>
-              <Button color="inherit" onClick={() => navigate('/create-account')}>Create Account</Button>
-            </>
-          ) : (
-            <>
-              <Button color="inherit" onClick={handleLogout}>Logout</Button>
-              <Button color="inherit" onClick={() => navigate('/add-car')}>Add Car</Button>
-              <Button color="inherit" onClick={() => navigate('/inventory')}>Inventory</Button>
-              <Button color="inherit" onClick={() => navigate('/home')}>Dashboard</Button>
-            </>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Container>
-        <Box mt={4}>
-          <Routes>
-            {/* If the user is authenticated, redirect away from the login page */}
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />} />
-            <Route path="/create-account" element={<CreateAccount />} />
-            {isAuthenticated ? (
+    <Box sx={{ display: 'flex', height: '100vh' }}>
+      {/* Drawer for vertical navigation */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: 240,
+          flexShrink: 0,
+          [`& .MuiDrawer-paper`]: { 
+            width: 240, 
+            boxSizing: 'border-box',
+            backgroundColor: 'black',
+            color: 'white'
+          },
+        }}
+      >
+        <Toolbar />
+        <Box sx={{ overflow: 'auto' }}>
+          <List>
+            {/* DealCost button that navigates to the splash screen */}
+            <ListItem 
+              button 
+              onClick={() => navigate('/')}  // Navigate to splash screen
+              sx={{
+                color: 'white',
+                '&:hover': { 
+                  backgroundColor: '#333', // Custom hover background color
+                }
+              }}
+            >
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                DealCost
+              </Typography>
+            </ListItem>
+
+            {!isAuthenticated ? (
               <>
-                <Route path="/home" element={<Home />} />
-                <Route path="/add-car" element={<AddCar />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/add-expense-report" element={<AddExpenseReport />} />
-                <Route path="/enter-details-manually" element={<EnterDetailsManually />} />
-                <Route path="/view-deal/:vin" element={<ViewDeal />} /> {/* Route for viewing deals */}
+                <ListItem 
+                  button 
+                  onClick={() => navigate('/login')} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for login
+                  }}
+                >
+                  <ListItemText primary="Login" />
+                </ListItem>
+
+                <ListItem 
+                  button 
+                  onClick={() => navigate('/create-account')} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for create account
+                  }}
+                >
+                  <ListItemText primary="Create Account" />
+                </ListItem>
               </>
             ) : (
-              <Route path="*" element={<Navigate to="/login" />} />
+              <>
+                <ListItem 
+                  button 
+                  onClick={() => navigate('/add-car')} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for add car
+                  }}
+                >
+                  <ListItemText primary="Add Car" />
+                </ListItem>
+
+                <ListItem 
+                  button 
+                  onClick={() => navigate('/inventory')} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for inventory
+                  }}
+                >
+                  <ListItemText primary="Inventory" />
+                </ListItem>
+
+                <ListItem 
+                  button 
+                  onClick={handleLogout} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for logout
+                  }}
+                >
+                  <ListItemText primary="Logout" />
+                </ListItem>
+
+                <ListItem 
+                  button 
+                  onClick={() => navigate('/home')} 
+                  sx={{
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for dashboard
+                  }}
+                >
+                  <ListItemText primary="Dashboard" />
+                </ListItem>
+              </>
             )}
-          </Routes>
+          </List>
         </Box>
-      </Container>
-    </div>
+      </Drawer>
+
+      {/* Main content area */}
+      <Box
+        sx={{
+          flexGrow: 1,  // Take up remaining width
+          backgroundColor: '#f5f5f5',  // Optional background color
+          padding: '16px',
+        }}
+      >
+        <Routes>
+          {/* Set splash screen as the default route */}
+          <Route path="/" element={<SplashScreen />} />
+
+          {/* If the user is authenticated, redirect away from the login page */}
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />} />
+          <Route path="/create-account" element={<CreateAccount />} />
+          {isAuthenticated ? (
+            <>
+              <Route path="/home" element={<Home />} />
+              <Route path="/add-car" element={<AddCar />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/add-expense-report" element={<AddExpenseReport />} />
+              <Route path="/enter-details-manually" element={<EnterDetailsManually />} />
+              <Route path="/view-deal/:vin" element={<ViewDeal />} /> {/* Route for viewing deals */}
+            </>
+          ) : (
+            <Route path="*" element={<Navigate to="/login" />} />
+          )}
+        </Routes>
+      </Box>
+    </Box>
   );
 }
 

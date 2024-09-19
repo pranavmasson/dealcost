@@ -11,3 +11,19 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+.MuiContainer-root {
+  padding: 0 !important;  /* Ensures no padding in Container */
+  margin: 0 !important;   /* Ensures no margin */
+}

@@ -23,13 +23,40 @@ function Home() {
         <Typography variant="h4" gutterBottom>
           Welcome to Your Dashboard
         </Typography>
-        <Button variant="contained" color="primary" onClick={handleViewInventory} sx={{ m: 1 }}>
+        <Button 
+          variant="contained" 
+          onClick={handleViewInventory} 
+          sx={{ 
+            m: 1, 
+            backgroundColor: 'black', 
+            color: 'white', 
+            '&:hover': { backgroundColor: '#333' } 
+          }}
+        >
           View Inventory
         </Button>
-        <Button variant="contained" color="secondary" onClick={handleAddCar} sx={{ m: 1 }}>
+        <Button 
+          variant="contained" 
+          onClick={handleAddCar} 
+          sx={{ 
+            m: 1, 
+            backgroundColor: 'black', 
+            color: 'white', 
+            '&:hover': { backgroundColor: '#333' } 
+          }}
+        >
           Add New Car
         </Button>
-        <Button variant="contained" color="success" onClick={handleAddExpenseReport} sx={{ m: 1 }}>
+        <Button 
+          variant="contained" 
+          onClick={handleAddExpenseReport} 
+          sx={{ 
+            m: 1, 
+            backgroundColor: 'black', 
+            color: 'white', 
+            '&:hover': { backgroundColor: '#333' } 
+          }}
+        >
           Add Expense Report
         </Button>
       </Box>

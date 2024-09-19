@@ -193,5 +193,67 @@ def get_reports():
     
     return jsonify({"records": reports}), 200
 
+@app.route('/api/delete_vehicle', methods=['DELETE'])
+@cross_origin()
+def delete_vehicle():
+    try:
+        vehicle_data = request.json
+        vin = vehicle_data.get('vin')
+        username = vehicle_data.get('username')
+
+        if not vin or not username:
+            return jsonify({"error": "Missing VIN or username"}), 400
+
+        # Check if the car exists in the inventory
+        car = inventory_collection.find_one({"vin": vin, "username": username})
+        if not car:
+            return jsonify({"error": "Car not found"}), 404
+
+        # Delete the car from the inventory
+        inventory_collection.delete_one({"vin": vin, "username": username})
+
+        return jsonify({"message": "Vehicle deleted successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/delete_report', methods=['DELETE'])
+@cross_origin()
+def delete_report():
+    try:
+        data = request.json
+        report_id = data.get('id')
+
+        if not report_id:
+            return jsonify({"error": "Missing report ID"}), 400
+
+        # Check if the report exists
+        report = reports_collection.find_one({"_id": ObjectId(report_id)})
+        if not report:
+            return jsonify({"error": "Report not found"}), 404
+
+        # Delete the report from the database
+        reports_collection.delete_one({"_id": ObjectId(report_id)})
+
+        return jsonify({"message": "Report deleted successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/inventory/<vin>', methods=['GET'])
+@cross_origin()
+def get_vehicle_by_vin(vin):
+    try:
+        vehicle = inventory_collection.find_one({"vin": vin})
+        
+        if vehicle:
+            # Remove ObjectId from the response if needed
+            vehicle['_id'] = str(vehicle['_id'])
+            return jsonify(vehicle), 200
+        else:
+            return jsonify({"error": "Vehicle not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
