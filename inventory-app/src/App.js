@@ -8,140 +8,152 @@ import Home from './components/Home';
 import AddExpenseReport from './components/AddExpenseReport';
 import EnterDetailsManually from './components/EnterDetailsManually';
 import ViewDeal from './components/ViewDeal';
-import SplashScreen from './components/SplashScreen'; // Import your splash screen component
-import { Toolbar, Typography, Box, Drawer, List, ListItem, ListItemText } from '@mui/material';
+import SplashScreen from './components/SplashScreen';
+import UserSettings from './components/UserSettings'; // Import the UserSettings component
+import { AppBar, Toolbar, Typography, Box, Drawer, List, ListItem, ListItemText, IconButton, CssBaseline } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import EditCar from './components/EditCar'; // Import your EditCar component
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [open, setOpen] = useState(true); // State to handle sidebar collapse/expand
+  const [companyName, setCompanyName] = useState('');
   const navigate = useNavigate();
 
-  // Check localStorage for userToken on app load/refresh
+  // Fetch token and company name from localStorage on component mount
   useEffect(() => {
     const userToken = localStorage.getItem('userToken');
+    const storedCompanyName = localStorage.getItem('company_name');
+    if (storedCompanyName) {
+      setCompanyName(storedCompanyName); // Set company name state
+    }
     if (userToken) {
-      setIsAuthenticated(true);  // User is logged in, set the state to authenticated
-    } else {
-      setIsAuthenticated(false);  // No token found, set state to not authenticated
+      setIsAuthenticated(true);
     }
   }, []);
 
-  const handleLogin = (username, token) => {
-    localStorage.setItem('userToken', token); // Store token in local storage
-    localStorage.setItem('username', username); // Store username in local storage
+  const handleLogin = (username, token, company_name) => {
+    /*localStorage.setItem('userToken', token);*/
+    localStorage.setItem('username', username);
+    localStorage.setItem('company_name', company_name);
+    setCompanyName(company_name);
     setIsAuthenticated(true);
-    navigate('/home'); // Redirect to the dashboard after login
+    navigate('/home'); // Navigate to dashboard after login
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('userToken'); // Remove token from local storage
-    localStorage.removeItem('username'); // Remove username from local storage
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('username');
+    localStorage.removeItem('company_name');
     setIsAuthenticated(false);
-    navigate('/login'); // Redirect to login page after logout
+    setCompanyName(''); // Clear company name after logout
+    navigate('/login');
+  };
+
+  const toggleDrawer = () => {
+    setOpen(!open);
   };
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
-      {/* Drawer for vertical navigation */}
+      <CssBaseline />
+
+      {/* AppBar with Menu Icon */}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: open ? `calc(100% - 240px)` : '100%',
+          ml: open ? `240px` : 0,
+          transition: 'width 0.3s ease',
+          backgroundColor: 'black',
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={toggleDrawer}
+            edge="start"
+            sx={{ mr: 2, ...(open && { display: 'none' }) }}
+          >
+            <MenuIcon />
+          </IconButton>
+          {isAuthenticated && companyName && (
+            <Typography variant="h6" noWrap component="div">
+              {companyName || ''}
+            </Typography>
+          )}
+        </Toolbar>
+      </AppBar>
+
+      {/* Drawer (Collapsible Sidebar) */}
       <Drawer
         variant="permanent"
+        open={open}
         sx={{
-          width: 240,
+          width: open ? 240 : 60, // Adjust width based on 'open' state
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { 
-            width: 240, 
+          [`& .MuiDrawer-paper`]: {
+            width: open ? 240 : 60,
             boxSizing: 'border-box',
             backgroundColor: 'black',
-            color: 'white'
+            color: 'white',
+            transition: 'width 0.3s ease',
           },
         }}
       >
-        <Toolbar />
+        <Toolbar>
+          <IconButton onClick={toggleDrawer} sx={{ color: 'white' }}>
+            {open ? <ChevronLeftIcon /> : <MenuIcon />}
+          </IconButton>
+        </Toolbar>
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            {/* DealCost button that navigates to the splash screen */}
-            <ListItem 
-              button 
-              onClick={() => navigate('/')}  // Navigate to splash screen
+            {/* Collapsible Sidebar - Icons when closed, Text when expanded */}
+            <ListItem
+              button
+              onClick={() => navigate('/')}
               sx={{
                 color: 'white',
-                '&:hover': { 
-                  backgroundColor: '#333', // Custom hover background color
-                }
+                '&:hover': { backgroundColor: '#333' }
               }}
             >
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: open ? 'block' : 'none' }}>
                 DealCost
               </Typography>
             </ListItem>
 
             {!isAuthenticated ? (
               <>
-                <ListItem 
-                  button 
-                  onClick={() => navigate('/login')} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for login
-                  }}
-                >
-                  <ListItemText primary="Login" />
+                <ListItem button onClick={() => navigate('/login')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Login" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
 
-                <ListItem 
-                  button 
-                  onClick={() => navigate('/create-account')} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for create account
-                  }}
-                >
-                  <ListItemText primary="Create Account" />
+                <ListItem button onClick={() => navigate('/create-account')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Create Account" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
               </>
             ) : (
               <>
-                <ListItem 
-                  button 
-                  onClick={() => navigate('/add-car')} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for add car
-                  }}
-                >
-                  <ListItemText primary="Add Car" />
+                <ListItem button onClick={() => navigate('/add-car')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Add Car" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
 
-                <ListItem 
-                  button 
-                  onClick={() => navigate('/inventory')} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for inventory
-                  }}
-                >
-                  <ListItemText primary="Inventory" />
+                <ListItem button onClick={() => navigate('/inventory')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Inventory" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
 
-                <ListItem 
-                  button 
-                  onClick={handleLogout} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for logout
-                  }}
-                >
-                  <ListItemText primary="Logout" />
+                <ListItem button onClick={() => navigate('/home')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Dashboard" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
 
-                <ListItem 
-                  button 
-                  onClick={() => navigate('/home')} 
-                  sx={{
-                    color: 'white',
-                    '&:hover': { backgroundColor: '#1a1a1a' }, // Custom hover color for dashboard
-                  }}
-                >
-                  <ListItemText primary="Dashboard" />
+                <ListItem button onClick={() => navigate('/user-settings')} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="User Settings" sx={{ display: open ? 'block' : 'none' }} />
+                </ListItem>
+
+                <ListItem button onClick={handleLogout} sx={{ color: 'white', '&:hover': { backgroundColor: '#1a1a1a' } }}>
+                  <ListItemText primary="Logout" sx={{ display: open ? 'block' : 'none' }} />
                 </ListItem>
               </>
             )}
@@ -152,16 +164,14 @@ function App() {
       {/* Main content area */}
       <Box
         sx={{
-          flexGrow: 1,  // Take up remaining width
-          backgroundColor: '#f5f5f5',  // Optional background color
+          flexGrow: 1,
+          backgroundColor: '#f5f5f5',
           padding: '16px',
+          mt: 8, // Ensure space for the AppBar
         }}
       >
         <Routes>
-          {/* Set splash screen as the default route */}
           <Route path="/" element={<SplashScreen />} />
-
-          {/* If the user is authenticated, redirect away from the login page */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />} />
           <Route path="/create-account" element={<CreateAccount />} />
           {isAuthenticated ? (
@@ -171,7 +181,9 @@ function App() {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/add-expense-report" element={<AddExpenseReport />} />
               <Route path="/enter-details-manually" element={<EnterDetailsManually />} />
-              <Route path="/view-deal/:vin" element={<ViewDeal />} /> {/* Route for viewing deals */}
+              <Route path="/view-deal/:vin" element={<ViewDeal />} />
+              <Route path="/user-settings" element={<UserSettings />} /> {/* New User Settings route */}
+              <Route path="/edit-car/:vin" element={<EditCar />} /> {/* Route for editing a car */}
             </>
           ) : (
             <Route path="*" element={<Navigate to="/login" />} />

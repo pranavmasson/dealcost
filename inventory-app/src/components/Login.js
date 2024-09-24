@@ -32,8 +32,11 @@ function Login({ onLogin }) {
         } else {
           setMessage(data.message);
           localStorage.setItem('userToken', data.user_id); // Store userToken (user ID) in local storage
+          console.log('User ID:', data.user_id); // Debugging log
           localStorage.setItem('username', formData.username); // Also store username for reference
-          onLogin(data.user_id);  // Pass the user ID back to App or parent component
+          localStorage.setItem('company_name', data.company_name); // Store company name in local storage
+
+          onLogin(data.user_id);  // Pass user ID and company name to parent component
           navigate('/home');  // Redirect to the homepage after successful login
         }
       })

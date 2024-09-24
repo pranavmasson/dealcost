@@ -3,9 +3,10 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from flask_cors import CORS, cross_origin
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Initialize MongoDB client
 client = MongoClient("mongodb+srv://dealcost24:dealcost@dealcostdb.crtb7.mongodb.net/")
@@ -22,14 +23,12 @@ def index():
 
 @app.after_request
 def after_request(response):
-  response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
   response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
   response.headers.add('Access-Control-Allow-Credentials', 'true')
   return response
 
 @app.route('/api/create_account', methods=['POST', 'OPTIONS'])
-@cross_origin()
 def create_account():
     if request.method == 'OPTIONS':
         # Preflight request handling
@@ -69,7 +68,6 @@ def create_account():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
-@cross_origin()  # Apply CORS to this route
 def login():
     if request.method == 'OPTIONS':
         # Handle preflight request
@@ -98,8 +96,14 @@ def login():
         # Check if the provided password matches the stored password hash
         if not check_password_hash(user.get("password", ""), login_data["password"]):
             return jsonify({"error": "Invalid username or password"}), 401
+        
+        print(user["company_name"])
 
-        return jsonify({"message": "Login successful", "user_id": str(user["_id"])}), 200
+        return jsonify({
+            "message": "Login successful",
+            "user_id": str(user["_id"]),
+            "company_name": str(user["company_name"])  # Safely retrieve company_name
+        }), 200
 
     except Exception as e:
         # Print error to console for debugging
@@ -107,7 +111,6 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/insert_vehicle', methods=['POST', 'OPTIONS'])
-@cross_origin()
 def insert_vehicle():
     if request.method == 'OPTIONS':
         # Preflight request handling
@@ -141,7 +144,10 @@ def insert_vehicle():
             "mileage": int(vehicle_data["mileage"]),
             "color": vehicle_data["color"],
             "purchase_price": float(vehicle_data["purchase_price"]),
-            "sale_price": float(vehicle_data.get("sale_price", 0))  # Optional field
+            "sale_price": float(vehicle_data.get("sale_price", 0)),  # Optional field
+            "sale_status": "false",
+            "date_added": str(datetime.now().strftime('%m/%d/%Y')),
+            "date_sold": ""  # Initialize date_sold to an empty string
         }
         result = inventory_collection.insert_one(new_vehicle)
 
@@ -151,7 +157,6 @@ def insert_vehicle():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/inventory', methods=['GET'])
-@cross_origin()
 def get_inventory():
     try:
         username = request.args.get('username')
@@ -194,7 +199,6 @@ def get_reports():
     return jsonify({"records": reports}), 200
 
 @app.route('/api/delete_vehicle', methods=['DELETE'])
-@cross_origin()
 def delete_vehicle():
     try:
         vehicle_data = request.json
@@ -218,7 +222,6 @@ def delete_vehicle():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/delete_report', methods=['DELETE'])
-@cross_origin()
 def delete_report():
     try:
         data = request.json
@@ -241,7 +244,6 @@ def delete_report():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/inventory/<vin>', methods=['GET'])
-@cross_origin()
 def get_vehicle_by_vin(vin):
     try:
         vehicle = inventory_collection.find_one({"vin": vin})
@@ -252,6 +254,101 @@ def get_vehicle_by_vin(vin):
             return jsonify(vehicle), 200
         else:
             return jsonify({"error": "Vehicle not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/user/<user_id>', methods=['GET'])
+def get_user(user_id):
+    try:
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Exclude password hash when returning user data
+        user_data = {
+            "username": user["username"],
+            "email": user["email"],
+            "company_name": user["company_name"],
+            "phone_number": user.get("phone_number", "")
+        }
+
+        return jsonify(user_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/user/<user_id>', methods=['PUT'])
+def update_user(user_id):
+    try:
+        user_data = request.json
+        # Validate the incoming data
+        if not all(k in user_data for k in ("username", "email", "company_name")):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Update user data in the database
+        update_result = users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {
+                "username": user_data["username"],
+                "email": user_data["email"],
+                "company_name": user_data["company_name"],
+                "phone_number": user_data.get("phone_number", "")
+            }}
+        )
+
+        if update_result.modified_count == 0:
+            return jsonify({"error": "User not updated"}), 404
+
+        return jsonify({"message": "User updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/update_vehicle/<vin>', methods=['PUT'])
+def update_vehicle(vin):
+    try:
+        vehicle_data = request.json
+        
+        # Prepare the update data
+        update_fields = {
+            "make": vehicle_data["make"],
+            "model": vehicle_data["model"],
+            "year": vehicle_data["year"],
+            "mileage": vehicle_data["mileage"],
+            "color": vehicle_data["color"],
+            "purchase_price": vehicle_data["purchase_price"],
+            "sale_price": vehicle_data.get("sale_price", 0),
+            "sale_status": vehicle_data["sale_status"]
+        }
+
+        # If the car is marked as sold, include the current date
+        if vehicle_data["sale_status"] == "sold":
+            update_fields["date_sold"] = vehicle_data.get("date_sold", "")
+        else:
+            update_fields["date_sold"] = ""
+
+        # Update the vehicle in the database
+        result = inventory_collection.update_one(
+            {"vin": vin},
+            {"$set": update_fields}
+        )
+        if result.modified_count == 0:
+            return jsonify({"error": "Vehicle not updated"}), 404
+
+        return jsonify({"message": "Vehicle updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/inventory/<vin>', methods=['GET'])
+def get_car_by_vin(vin):
+    try:
+        car = inventory_collection.find_one({"vin": vin})
+        if not car:
+            return jsonify({"error": "Car not found"}), 404
+        # Ensure ObjectId is serialized properly
+        car['_id'] = str(car['_id'])
+        return jsonify(car), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
