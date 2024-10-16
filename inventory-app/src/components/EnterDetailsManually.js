@@ -12,14 +12,15 @@ function EnterDetailsManually() {
   const [formData, setFormData] = useState({
     vin: vin || '',  // Pre-fill the VIN if passed from previous page, otherwise leave it empty
     category: '',
+    customCategory: '',  // To store custom category if selected
     notes: '',
     cost: '',
     date_occurred: '',
-    location: '',
-    phone_number: '',
-    address: '',
-    comments: ''
+    service_provider: '',  // Changed from location to service provider
+    comments: ''  // Removed phone number and address
   });
+
+  const [isCustomCategory, setIsCustomCategory] = useState(false); // Track if custom category is selected
 
   const categories = [
     'Sales Tax & DMV tag and Title',
@@ -36,18 +37,31 @@ function EnterDetailsManually() {
     'Battery',
     'Inspection & Emission Cost',
     'Detailing Cost',
-    'Parts'
+    'Parts',
+    'Custom'  // Add an option for custom category
   ];
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'category') {
+      setIsCustomCategory(value === 'Custom');
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value,
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Determine whether to send the custom category or the selected one
+    const reportData = {
+      ...formData,
+      category: isCustomCategory ? formData.customCategory : formData.category
+    };
 
     // Send the form data to the backend for MongoDB storage
     fetch('http://127.0.0.1:5000/api/insert_report', {
@@ -55,20 +69,20 @@ function EnterDetailsManually() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(reportData),
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.error) {
-        alert('Error: ' + data.error);
-      } else {
-        alert('Report added successfully!');
-        navigate('/home'); // Navigate back to dashboard or another page after form submission
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          alert('Report added successfully!');
+          navigate('/home'); // Navigate back to dashboard or another page after form submission
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
   };
 
   return (
@@ -89,6 +103,8 @@ function EnterDetailsManually() {
             required
             InputProps={{ readOnly: !!vin }}  // Make VIN field read-only if pre-filled
           />
+
+          {/* Category Dropdown */}
           <TextField
             select
             label="Category"
@@ -106,6 +122,21 @@ function EnterDetailsManually() {
               </MenuItem>
             ))}
           </TextField>
+
+          {/* Custom Category Field */}
+          {isCustomCategory && (
+            <TextField
+              label="Custom Category"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              name="customCategory"
+              value={formData.customCategory}
+              onChange={handleChange}
+              required
+            />
+          )}
+
           <TextField
             label="Notes"
             variant="outlined"
@@ -139,32 +170,12 @@ function EnterDetailsManually() {
             required
           />
           <TextField
-            label="Location"
+            label="Service Provider"
             variant="outlined"
             fullWidth
             margin="normal"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Phone Number"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="phone_number"
-            value={formData.phone_number}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Address"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="address"
-            value={formData.address}
+            name="service_provider"
+            value={formData.service_provider}
             onChange={handleChange}
             required
           />

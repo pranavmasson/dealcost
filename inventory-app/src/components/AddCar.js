@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Select, MenuItem, InputLabel, FormControl, Grid } from '@mui/material';
 
 function AddCar() {
   const [formData, setFormData] = useState({
@@ -12,6 +12,7 @@ function AddCar() {
     color: '',
     purchase_price: '0',
     sale_price: '0',
+    sale_type: 'floor', // Default value for sale type
   });
   const [message, setMessage] = useState('');
 
@@ -27,27 +28,15 @@ function AddCar() {
 
     const username = localStorage.getItem('username'); // Retrieve the username from local storage
 
-    console.log('Retrieved username from local storage:', username); // Debugging log
-
     if (!username || username === 'undefined') {
       setMessage('User ID is missing or invalid. Please log in again.');
       return;
     }
 
     const vehicleData = {
-      vin: formData.vin,
-      make: formData.make,
-      model: formData.model,
-      trim: formData.trim,
-      year: formData.year,
-      mileage: formData.mileage,
-      color: formData.color,
-      purchase_price: formData.purchase_price,
-      sale_price: formData.sale_price,
-      username: username, // Include username in the payload
+      ...formData, // Spread formData to include all fields
+      username, // Include username in the payload
     };
-
-    console.log('Sending vehicle data:', vehicleData); // Debugging log
 
     fetch('http://127.0.0.1:5000/api/insert_vehicle', {
       method: 'POST',
@@ -75,107 +64,156 @@ function AddCar() {
   };
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth="md"> {/* Changed to 'md' for a wider container */}
       <Box mt={5}>
         <Typography variant="h4" component="h1" gutterBottom>
           Add Car
         </Typography>
         <form onSubmit={handleSubmit}>
-          <TextField
-            label="VIN"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="vin"
-            value={formData.vin}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Make"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="make"
-            value={formData.make}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Model"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="model"
-            value={formData.model}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Trim"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="trim"
-            value={formData.trim}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Year"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="year"
-            value={formData.year}
-            onChange={handleChange}
-            type="number"
-            required
-          />
-          <TextField
-            label="Mileage"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            type="number"
-            name="mileage"
-            value={formData.mileage}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Color"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Purchase Price"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            type="number"
-            name="purchase_price"
-            value={formData.purchase_price}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Sale Price"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            type="number"
-            name="sale_price"
-            value={formData.sale_price}
-            onChange={handleChange}
-          />
-          <Button variant="contained" color="primary" type="submit" fullWidth>
-            Add Car
-          </Button>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}> {/* First Column */}
+              <TextField
+                label="VIN"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="vin"
+                value={formData.vin}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}> {/* Second Column */}
+              <TextField
+                label="Make"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="make"
+                value={formData.make}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}> {/* Third Column */}
+              <TextField
+                label="Model"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="model"
+                value={formData.model}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Trim"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="trim"
+                value={formData.trim}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Year"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="year"
+                value={formData.year}
+                onChange={handleChange}
+                type="number"
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Mileage"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                type="number"
+                name="mileage"
+                value={formData.mileage}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Color"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="color"
+                value={formData.color}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Purchase Price"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                type="number"
+                name="purchase_price"
+                value={formData.purchase_price}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Sale Price"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                type="number"
+                name="sale_price"
+                value={formData.sale_price}
+                onChange={handleChange}
+              />
+            </Grid>
+
+            {/* Dropdown for Sale Type */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth margin="normal" variant="outlined">
+                <InputLabel id="sale-type-label">Sale Type</InputLabel>
+                <Select
+                  labelId="sale-type-label"
+                  label="Sale Type"
+                  name="sale_type"
+                  value={formData.sale_type}
+                  onChange={handleChange}
+                  required
+                >
+                  <MenuItem value="floor">Floor</MenuItem>
+                  <MenuItem value="dealer">Dealer</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={4}> {/* Submit Button */}
+              <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>
+                Add Car
+              </Button>
+            </Grid>
+          </Grid>
         </form>
         {message && <Typography color="error" mt={2}>{message}</Typography>}
       </Box>

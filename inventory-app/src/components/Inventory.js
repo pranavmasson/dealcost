@@ -1,17 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Box, Grid, Card, CardContent, CardHeader, Button, Switch, FormControlLabel } from '@mui/material';
+import {
+  Container,
+  Typography,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  Switch,
+  FormControlLabel,
+  TextField,
+  Select,
+  MenuItem,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [error, setError] = useState('');
   const [showSold, setShowSold] = useState(false); // To toggle between sold and available inventory
+  const [sortKey, setSortKey] = useState('vin'); // Default sort by VIN
+  const [sortOrder, setSortOrder] = useState('asc'); // Ascending by default
+  const [filter, setFilter] = useState({ make: '', model: '', minPrice: '', maxPrice: '' });
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInventory = async () => {
       try {
-        const username = localStorage.getItem('username');  // Retrieve the logged-in username from local storage
+        const username = localStorage.getItem('username'); // Retrieve the logged-in username from local storage
         const response = await fetch(`http://127.0.0.1:5000/api/inventory?username=${username}`);
         const data = await response.json();
 
@@ -30,20 +51,20 @@ function Inventory() {
   }, []);
 
   const handleViewDeal = (vin) => {
-    navigate(`/view-deal/${vin}`);  // Navigate to the ViewDeal page with the car's VIN
-  };
-
-  const handleAddExpenseReport = (vin) => {
-    navigate(`/add-expense-report`, { state: { vin } });  // Navigate to AddExpenseReport with VIN passed as state
+    navigate(`/view-deal/${vin}`); // Navigate to the ViewDeal page with the car's VIN
   };
 
   const handleEditCar = (vin) => {
-    navigate(`/edit-car/${vin}`);  // Navigate to EditCar page with the car's VIN
+    navigate(`/edit-car/${vin}`); // Navigate to EditCar page with the car's VIN
+  };
+
+  const handleAddExpenseReport = (vin) => {
+    navigate(`/enter-details-manually`, { state: { vin } }); // Navigate to EnterDetailsManually with VIN passed as state
   };
 
   const handleDeleteCar = async (vin) => {
     try {
-      const username = localStorage.getItem('username');  // Retrieve the logged-in username from local storage
+      const username = localStorage.getItem('username'); // Retrieve the logged-in username from local storage
 
       const response = await fetch(`http://127.0.0.1:5000/api/delete_vehicle`, {
         method: 'DELETE',
@@ -56,7 +77,7 @@ function Inventory() {
       const data = await response.json();
 
       if (response.ok) {
-        setInventory(inventory.filter(item => item.vin !== vin));  // Remove the deleted car from the state
+        setInventory(inventory.filter((item) => item.vin !== vin)); // Remove the deleted car from the state
         alert(data.message);
       } else {
         alert(data.error);
@@ -67,20 +88,47 @@ function Inventory() {
     }
   };
 
-  // Filter inventory based on "sale_status" as 'sold' or 'available'
-  const filteredInventory = inventory.filter(item => (showSold ? item.sale_status === 'sold' : item.sale_status !== 'sold'));
+  // Utility function to format price as $00000.00
+  const formatPrice = (price) => {
+    const numericPrice = parseFloat(price) || 0; // Convert to number or default to 0 if invalid
+    return `$${numericPrice.toFixed(2)}`;
+  };
 
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
-    const year = d.getFullYear();
-    return `${month}/${day}/${year}`;
+  // Sort Function
+  const sortInventory = (a, b) => {
+    if (sortOrder === 'asc') {
+      return a[sortKey] > b[sortKey] ? 1 : -1;
+    }
+    return a[sortKey] < b[sortKey] ? 1 : -1;
+  };
+
+  // Filter Function
+  const filterInventory = (item) => {
+    const { make, model, minPrice, maxPrice } = filter;
+    const matchesMake = make ? item.make.toLowerCase().includes(make.toLowerCase()) : true;
+    const matchesModel = model ? item.model.toLowerCase().includes(model.toLowerCase()) : true;
+    const matchesMinPrice = minPrice ? item.sale_price >= parseFloat(minPrice) : true;
+    const matchesMaxPrice = maxPrice ? item.sale_price <= parseFloat(maxPrice) : true;
+    return matchesMake && matchesModel && matchesMinPrice && matchesMaxPrice;
+  };
+
+  // Toggle based on sold status
+  const filteredSortedInventory = inventory
+    .filter(item => (showSold ? item.sale_status === 'sold' : item.sale_status !== 'sold'))
+    .filter(filterInventory)
+    .sort(sortInventory);
+
+  // Calculate additional fields
+  const calculateTotalCost = (purchasePrice, reconditionCost) => {
+    return (purchasePrice + reconditionCost).toFixed(2);
+  };
+
+  const calculateProfit = (salePrice, totalCost) => {
+    return (salePrice - totalCost).toFixed(2);
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box mt={5}>
         <Typography variant="h4" gutterBottom>
           Your Inventory
@@ -89,153 +137,194 @@ function Inventory() {
         {/* Toggle between available and sold inventory */}
         <FormControlLabel
           control={<Switch checked={showSold} onChange={() => setShowSold(!showSold)} />}
-          label={showSold ? "Show Available" : "Show Sold"}
+          label={showSold ? 'Show Available' : 'Show Sold'}
           sx={{ mb: 2 }}
         />
+
+        {/* Filter Inputs */}
+        <Box display="flex" gap={2} mb={3}>
+          <TextField
+            label="Filter by Make"
+            value={filter.make}
+            onChange={(e) => setFilter({ ...filter, make: e.target.value })}
+          />
+          <TextField
+            label="Filter by Model"
+            value={filter.model}
+            onChange={(e) => setFilter({ ...filter, model: e.target.value })}
+          />
+          <TextField
+            label="Min Sale Price"
+            type="number"
+            value={filter.minPrice}
+            onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
+          />
+          <TextField
+            label="Max Sale Price"
+            type="number"
+            value={filter.maxPrice}
+            onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
+          />
+        </Box>
+
+        {/* Sort Controls */}
+        <Box display="flex" gap={2} mb={3}>
+          <Select
+            label="Sort By"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+          >
+            <MenuItem value="vin">VIN</MenuItem>
+            <MenuItem value="make">Make</MenuItem>
+            <MenuItem value="model">Model</MenuItem>
+            <MenuItem value="purchase_price">Purchase Price</MenuItem>
+            <MenuItem value="sale_price">Sale Price</MenuItem>
+          </Select>
+          <Button
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            variant="outlined"
+          >
+            {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          </Button>
+        </Box>
 
         {error ? (
           <Typography color="error">{error}</Typography>
         ) : (
-          <Grid container spacing={4}>
-            {filteredInventory.map((item) => (
-              <Grid item xs={12} sm={6} md={6} key={item._id}>
-                <Card
-                  sx={{
-                    backgroundColor: 'white',  // Ensure background color is consistent
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', // Adds a subtle shadow
-                    borderRadius: 2, // Rounded corners
-                  }}
-                >
-                  <CardHeader 
-                    title={item.vin} 
-                    subheader={item.item_name} 
-                    sx={{
-                      backgroundColor: '#e0e0e0', // Slightly darker gray for the header
-                      padding: 2, // Ensure consistent padding in the header
-                    }} 
-                  />
-                  <CardContent
-                    sx={{
-                      padding: 3,  // Ensure consistent padding in the content
-                    }}
-                  >
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Make:</strong> {item.make || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Model:</strong> {item.model || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Trim:</strong> {item.trim || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Mileage:</strong> {item.mileage || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Color:</strong> {item.color || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Purchase Price:</strong> ${item.purchase_price}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Sale Price:</strong> ${item.sale_price || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Description:</strong> {item.item_description || 'N/A'}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      <strong>Date Added:</strong> {formatDate(item.date_added)}
-                    </Typography>
-                    {item.sale_status === 'sold' && (
-                      <Typography variant="body2" color="textSecondary">
-                        <strong>Date Sold:</strong> {formatDate(item.date_sold)}
-                      </Typography>
-                    )}
-                    <Box mt={2}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {[
+                    'VIN', 'Make', 'Model', 'Trim', 'Mileage', 'Color', 'Purchase Price', 'Recondition Cost',
+                    'Total Cost', 'Sale Price', 'Profit', 'Purchase Date', 'Date Sold', 'Sale Status', 'Actions'
+                  ].map((header) => (
+                    <TableCell
+                      key={header}
+                      sx={{
+                        borderRight: '1px solid #d0d0d0', // Add vertical line to each header cell
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {header}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredSortedInventory.map((item) => {
+                  const totalCost = calculateTotalCost(item.purchase_price, item.recondition_cost || 0);
+                  const profit = item.sale_status === 'sold' ? calculateProfit(item.sale_price, totalCost) : 'N/A';
+
+                  return (
+                    <TableRow key={item._id} hover sx={{ backgroundColor: item.sale_status === 'sold' ? '#f0f0f0' : 'white' }}>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.vin}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.make || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.model || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.trim || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.mileage || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.color || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{formatPrice(item.purchase_price)}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{formatPrice(item.recondition_cost || 0)}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{formatPrice(totalCost)}</TableCell>
+
+                      {/* Sale Price as a hyperlink */}
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>
+                        <Button
+                          variant="text"
+                          color="primary"
+                          onClick={() => handleViewDeal(item.vin)}
+                          sx={{
+                            textDecoration: 'underline', // Style to make it look like a hyperlink
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {formatPrice(item.sale_price || 0)}
+                        </Button>
+                      </TableCell>
+
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{profit}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.purchase_date || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.date_sold || 'N/A'}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.sale_status}</TableCell>
+                      <TableCell>
+                        <Box display="flex" flexDirection="column" gap={1}>
                           <Button
                             variant="contained"
                             onClick={() => handleViewDeal(item.vin)}
-                            fullWidth
+                            size="small"
                             sx={{
-                              backgroundColor: 'black',
+                              backgroundColor: '#1976d2', // Blue for view
                               color: 'white',
-                              borderRadius: 4,
-                              fontWeight: 'bold',
-                              padding: '10px',
+                              borderRadius: 2,
+                              fontSize: '12px',
+                              padding: '6px 8px',
                               '&:hover': {
-                                backgroundColor: '#333',
-                              }
+                                backgroundColor: '#1565c0',
+                              },
                             }}
                           >
                             View Deal
                           </Button>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Button
-                            variant="contained"
-                            onClick={() => handleDeleteCar(item.vin)}
-                            fullWidth
-                            sx={{
-                              backgroundColor: 'black',
-                              color: 'white',
-                              borderRadius: 4,
-                              fontWeight: 'bold',
-                              padding: '10px',
-                              '&:hover': {
-                                backgroundColor: '#333',
-                              }
-                            }}
-                          >
-                            Delete Car
-                          </Button>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Button
-                            variant="contained"
-                            onClick={() => handleAddExpenseReport(item.vin)}
-                            fullWidth
-                            sx={{
-                              backgroundColor: 'black',
-                              color: 'white',
-                              borderRadius: 4,
-                              fontWeight: 'bold',
-                              padding: '10px',
-                              '&:hover': {
-                                backgroundColor: '#333',
-                              }
-                            }}
-                          >
-                            Add Expense Report
-                          </Button>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
                           <Button
                             variant="contained"
                             onClick={() => handleEditCar(item.vin)}
-                            fullWidth
+                            size="small"
                             sx={{
-                              backgroundColor: 'black',
+                              backgroundColor: '#1976d2', // Blue for edit
                               color: 'white',
-                              borderRadius: 4,
-                              fontWeight: 'bold',
-                              padding: '10px',
+                              borderRadius: 2,
+                              fontSize: '12px',
+                              padding: '6px 8px',
                               '&:hover': {
-                                backgroundColor: '#333',
-                              }
+                                backgroundColor: '#1565c0',
+                              },
                             }}
                           >
-                            Edit Car
+                            Edit
                           </Button>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleAddExpenseReport(item.vin)}
+                            size="small"
+                            sx={{
+                              backgroundColor: '#43a047', // Green for add report
+                              color: 'white',
+                              borderRadius: 2,
+                              fontSize: '12px',
+                              padding: '6px 8px',
+                              '&:hover': {
+                                backgroundColor: '#388e3c',
+                              },
+                            }}
+                          >
+                            Add Report
+                          </Button>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleDeleteCar(item.vin)}
+                            size="small"
+                            sx={{
+                              backgroundColor: '#d32f2f', // Red for delete
+                              color: 'white',
+                              borderRadius: 2,
+                              fontSize: '12px',
+                              padding: '6px 8px',
+                              '&:hover': {
+                                backgroundColor: '#c62828',
+                              },
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </Box>
     </Container>

@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Container, Typography, Box, Grid, Card, CardContent, TextField, Button } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
+} from '@mui/material';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -11,6 +25,7 @@ ChartJS.register(ChartDataLabels);
 
 function ViewDeal() {
   const { vin } = useParams();  // Get the VIN from the URL parameter
+  const navigate = useNavigate();  // Hook to navigate between routes
   const [records, setRecords] = useState([]);
   const [error, setError] = useState('');
   const [totalMaintenanceCost, setTotalMaintenanceCost] = useState(0);
@@ -23,7 +38,7 @@ function ViewDeal() {
       try {
         const response = await fetch(`http://127.0.0.1:5000/api/inventory/${vin}`);  // API to get car details by VIN
         const data = await response.json();
-        
+
         if (response.ok) {
           setPurchasePrice(data.purchase_price || 0);
           setSalePrice(data.sale_price || 0);
@@ -92,6 +107,16 @@ function ViewDeal() {
     }
   };
 
+  // Navigate to the edit report page
+  const handleEditRecord = (recordId) => {
+    navigate(`/edit-report/${recordId}`);  // Redirect to edit-report route with the report ID
+  };
+
+  // Navigate to the add expense report page for the current VIN
+  const handleAddExpenseReport = () => {
+    navigate(`/add-expense-report/${vin}`);  // Redirect to the add expense report page
+  };
+
   // Prepare data for pie chart
   const categories = [...new Set(records.map(record => record.category))];
   const maintenanceCostsByCategory = categories.map(category =>
@@ -118,7 +143,7 @@ function ViewDeal() {
     plugins: {
       tooltip: {
         callbacks: {
-          label: function(tooltipItem) {
+          label: function (tooltipItem) {
             const total = maintenanceCostsByCategory.reduce((sum, value) => sum + value, 0);
             const value = tooltipItem.raw;
             const percent = ((value / total) * 100).toFixed(2);
@@ -143,28 +168,102 @@ function ViewDeal() {
       },
     },
   };
-  
+
+  // Clean print function with simplified content
+  const handlePrint = () => {
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Maintenance Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { font-size: 24px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+            th { background-color: #f0f0f0; }
+          </style>
+        </head>
+        <body>
+          <h1>Maintenance Report for VIN: ${vin}</h1>
+          
+          <h2>Cost Summary</h2>
+          <p><strong>Purchase Price:</strong> $${purchasePrice.toFixed(2)}</p>
+          <p><strong>Total Maintenance Cost:</strong> $${totalMaintenanceCost.toFixed(2)}</p>
+          <p><strong>Total Cost (Purchase + Maintenance):</strong> $${(purchasePrice + totalMaintenanceCost).toFixed(2)}</p>
+          <p><strong>Sale Price:</strong> $${salePrice.toFixed(2)}</p>
+          <p><strong>Difference (Sale Price - Total Cost):</strong> $${(salePrice - (purchasePrice + totalMaintenanceCost)).toFixed(2)}</p>
+          
+          <h2>Maintenance Records</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Cost</th>
+                <th>Category</th>
+                <th>Vendor</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${records.map(record => `
+                <tr>
+                  <td>${record.date_occurred}</td>
+                  <td>$${record.cost}</td>
+                  <td>${record.category}</td>
+                  <td>${record.vendor}</td>
+                  <td>${record.description || 'No description'}</td>
+                </tr>
+              `).join('')}
+              <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>$${totalMaintenanceCost.toFixed(2)}</strong></td>
+                <td colspan="3"></td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box mt={5}>
         <Typography variant="h4" gutterBottom>
           VIN: {vin}
         </Typography>
 
+        {/* Print and Add Expense Report Buttons (aligned to the right) */}
+        <Box display="flex" justifyContent="flex-end" gap={2}>
+          <Button variant="contained" color="primary" onClick={handlePrint}>
+            Print Report
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/enter-details-manually", { state: { vin } })}  // Pass VIN as state
+          >
+            Add Expense Report
+          </Button>
+        </Box>
+
+        {/* Rest of your component */}
         <Box display="flex" flexDirection="column" alignItems="left">
           <Typography variant="h5" gutterBottom style={{ textAlign: 'left' }}>
             Maintenance Costs by Category
           </Typography>
 
-
-          {/* Use Grid layout to keep the chart and inputs separate */}
           <Grid container spacing={4}>
             <Grid item xs={12} sm={6} style={{ height: '300px', width: '300px' }}>
               <Pie data={pieData} options={pieOptions} />
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              {/* Real-time Maintenance vs Sale Price Comparison */}
               <Typography variant="h5" gutterBottom>
                 Cost Comparison
               </Typography>
@@ -209,38 +308,58 @@ function ViewDeal() {
         </Box>
 
         {error && <Typography color="error">{error}</Typography>}
-        
-        <Grid container spacing={4} mt={5}>
-          {records.map((record) => (
-            <Grid item xs={12} sm={6} md={4} key={record._id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6">Date: {record.date_occurred}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    <strong>Cost:</strong> ${record.cost}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    <strong>Category:</strong> {record.category}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    <strong>Location:</strong> {record.location}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" style={{ marginTop: '10px', whiteSpace: 'pre-line' }}>
-                    <strong>Notes:</strong> {record.notes || 'No additional notes'}
-                  </Typography>
-                  <Button 
-                    variant="contained" 
-                    color="secondary" 
-                    onClick={() => handleDeleteRecord(record._id)}
-                    style={{ marginTop: '20px' }}  // Added extra margin to the button
-                  >
-                    Delete Record
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+
+        {/* Table for maintenance records */}
+        <TableContainer component={Paper} sx={{ marginTop: 4 }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                {['Date', 'Cost', 'Category', 'Vendor', 'Description', 'Receipt', 'Actions'].map((header) => (
+                  <TableCell key={header} sx={{ fontWeight: 'bold', borderRight: '1px solid #d0d0d0' }}>
+                    {header}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {records.map((record) => (
+                <TableRow key={record._id} hover sx={{ backgroundColor: 'white' }}>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.date_occurred}</TableCell>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>${record.cost}</TableCell>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.category}</TableCell>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.vendor}</TableCell>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.description || 'No description'}</TableCell>
+                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}> {/* Placeholder for receipt */}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() => handleEditRecord(record._id)}  // Edit button to navigate to edit page
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      size="small"
+                      onClick={() => handleDeleteRecord(record._id)}
+                      sx={{ ml: 1 }}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {/* Add a footer row for total maintenance cost */}
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>${totalMaintenanceCost.toFixed(2)}</TableCell>
+                <TableCell colSpan={5}></TableCell> {/* Empty cells for alignment */}
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
     </Container>
   );

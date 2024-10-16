@@ -147,7 +147,8 @@ def insert_vehicle():
             "sale_price": float(vehicle_data.get("sale_price", 0)),  # Optional field
             "sale_status": "false",
             "date_added": str(datetime.now().strftime('%m/%d/%Y')),
-            "date_sold": ""  # Initialize date_sold to an empty string
+            "date_sold": "",  # Initialize date_sold to an empty string
+            "sale_type": vehicle_data.get("sale_type", "dealer")
         }
         result = inventory_collection.insert_one(new_vehicle)
 
@@ -349,6 +350,44 @@ def get_car_by_vin(vin):
         # Ensure ObjectId is serialized properly
         car['_id'] = str(car['_id'])
         return jsonify(car), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/report/<report_id>', methods=['GET'])
+def get_report(report_id):
+    try:
+        report = reports_collection.find_one({"_id": ObjectId(report_id)})
+        if report:
+            report['_id'] = str(report['_id'])  # Convert ObjectId to string for JSON serialization
+            return jsonify(report), 200
+        else:
+            return jsonify({"error": "Report not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/report/<report_id>', methods=['PUT'])
+def update_report(report_id):
+    try:
+        data = request.json  # Get the updated data from the request
+        update_fields = {
+            "date_occurred": data.get('date_occurred'),
+            "cost": data.get('cost'),
+            "category": data.get('category'),
+            "vendor": data.get('vendor'),
+            "description": data.get('description'),
+            "receipt": data.get('receipt', "")  # If receipt is implemented
+        }
+
+        # Update the report in the database
+        result = reports_collection.update_one(
+            {"_id": ObjectId(report_id)},
+            {"$set": update_fields}
+        )
+
+        if result.matched_count:
+            return jsonify({"message": "Report updated successfully"}), 200
+        else:
+            return jsonify({"error": "Report not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

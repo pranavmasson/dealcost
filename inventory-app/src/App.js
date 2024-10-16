@@ -14,6 +14,7 @@ import { AppBar, Toolbar, Typography, Box, Drawer, List, ListItem, ListItemText,
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import EditCar from './components/EditCar'; // Import your EditCar component
+import EditReport from './components/EditReport';  // Assuming EditReport is the component for editing the report
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,7 +67,7 @@ function App() {
           width: open ? `calc(100% - 240px)` : '100%',
           ml: open ? `240px` : 0,
           transition: 'width 0.3s ease',
-          backgroundColor: 'black',
+          backgroundColor: '#1763a6', // Changed color to #1763a6
         }}
       >
         <Toolbar>
@@ -97,7 +98,7 @@ function App() {
           [`& .MuiDrawer-paper`]: {
             width: open ? 240 : 60,
             boxSizing: 'border-box',
-            backgroundColor: 'black',
+            backgroundColor: '#1763a6', // Changed color to #1763a6
             color: 'white',
             transition: 'width 0.3s ease',
           },
@@ -184,6 +185,7 @@ function App() {
               <Route path="/view-deal/:vin" element={<ViewDeal />} />
               <Route path="/user-settings" element={<UserSettings />} /> {/* New User Settings route */}
               <Route path="/edit-car/:vin" element={<EditCar />} /> {/* Route for editing a car */}
+              <Route path="/edit-report/:reportId" element={<EditReport />} />
             </>
           ) : (
             <Route path="*" element={<Navigate to="/login" />} />
