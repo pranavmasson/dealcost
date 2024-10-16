@@ -197,7 +197,7 @@ function Inventory() {
                 <TableRow>
                   {[
                     'VIN', 'Make', 'Model', 'Trim', 'Mileage', 'Color', 'Purchase Price', 'Recondition Cost',
-                    'Total Cost', 'Sale Price', 'Profit', 'Purchase Date', 'Date Sold', 'Sale Status', 'Actions'
+                    'Total Cost', 'Sale Price', 'Profit', 'Purchase Date', 'Date Sold', 'Sale Status', 'Closing Statement', 'Actions'
                   ].map((header) => (
                     <TableCell
                       key={header}
@@ -247,6 +247,7 @@ function Inventory() {
                       <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.purchase_date || 'N/A'}</TableCell>
                       <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.date_sold || 'N/A'}</TableCell>
                       <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.sale_status}</TableCell>
+                      <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{item.closing_statement || 'N/A'}</TableCell> {/* New closing statement column */}
                       <TableCell>
                         <Box display="flex" flexDirection="column" gap={1}>
                           <Button

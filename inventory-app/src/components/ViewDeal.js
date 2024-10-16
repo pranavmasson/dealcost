@@ -31,8 +31,9 @@ function ViewDeal() {
   const [totalMaintenanceCost, setTotalMaintenanceCost] = useState(0);
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
+  const [yearMakeModel, setYearMakeModel] = useState({ year: '', make: '', model: '' });  // New state for year, make, model
 
-  // Fetch car details (purchase price, sale price) based on VIN
+  // Fetch car details (purchase price, sale price, year, make, model) based on VIN
   useEffect(() => {
     const fetchCarDetails = async () => {
       try {
@@ -42,6 +43,7 @@ function ViewDeal() {
         if (response.ok) {
           setPurchasePrice(data.purchase_price || 0);
           setSalePrice(data.sale_price || 0);
+          setYearMakeModel({ year: data.year, make: data.make, model: data.model });  // Set year, make, model
         } else {
           setError(data.error || 'Error fetching car details');
         }
@@ -186,6 +188,7 @@ function ViewDeal() {
         </head>
         <body>
           <h1>Maintenance Report for VIN: ${vin}</h1>
+          <h2>${yearMakeModel.year} ${yearMakeModel.make} ${yearMakeModel.model}</h2>
           
           <h2>Cost Summary</h2>
           <p><strong>Purchase Price:</strong> $${purchasePrice.toFixed(2)}</p>
@@ -237,6 +240,10 @@ function ViewDeal() {
         <Typography variant="h4" gutterBottom>
           VIN: {vin}
         </Typography>
+        <Typography variant="h6" gutterBottom>
+          {`${yearMakeModel.year} ${yearMakeModel.make.toUpperCase()} ${yearMakeModel.model.toUpperCase()}`}
+        </Typography>
+
 
         {/* Print and Add Expense Report Buttons (aligned to the right) */}
         <Box display="flex" justifyContent="flex-end" gap={2}>

@@ -144,11 +144,13 @@ def insert_vehicle():
             "mileage": int(vehicle_data["mileage"]),
             "color": vehicle_data["color"],
             "purchase_price": float(vehicle_data["purchase_price"]),
-            "sale_price": float(vehicle_data.get("sale_price", 0)),  # Optional field
+            "sale_price": float(vehicle_data.get("sale_price", 0)),
             "sale_status": "false",
             "date_added": str(datetime.now().strftime('%m/%d/%Y')),
             "date_sold": "",  # Initialize date_sold to an empty string
-            "sale_type": vehicle_data.get("sale_type", "dealer")
+            "sale_type": vehicle_data.get("sale_type", "dealer"),
+            "closing_statement": vehicle_data.get("closing_statement", ""),
+            "finance_type": vehicle_data.get("finance_type", ""),
         }
         result = inventory_collection.insert_one(new_vehicle)
 

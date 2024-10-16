@@ -13,6 +13,8 @@ function AddCar() {
     purchase_price: '0',
     sale_price: '0',
     sale_type: 'floor', // Default value for sale type
+    finance_type: 'cash', // Default value for finance type
+    closing_statement: '' // New field for closing statement
   });
   const [message, setMessage] = useState('');
 
@@ -204,8 +206,42 @@ function AddCar() {
                 >
                   <MenuItem value="floor">Floor</MenuItem>
                   <MenuItem value="dealer">Dealer</MenuItem>
+                  <MenuItem value="consignment">Consignment</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+
+            {/* Dropdown for Finance Type */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth margin="normal" variant="outlined">
+                <InputLabel id="finance-type-label">Finance Type</InputLabel>
+                <Select
+                  labelId="finance-type-label"
+                  label="Finance Type"
+                  name="finance_type"
+                  value={formData.finance_type}
+                  onChange={handleChange}
+                  required
+                >
+                  <MenuItem value="cash">Cash</MenuItem>
+                  <MenuItem value="finance">Finance</MenuItem>
+                  <MenuItem value="outside finance">Outside Finance</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField
+                label="Closing Statement"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                name="closing_statement"
+                value={formData.closing_statement}
+                onChange={handleChange}
+                multiline
+                rows={4}
+              />
             </Grid>
 
             <Grid item xs={12} sm={4}> {/* Submit Button */}
