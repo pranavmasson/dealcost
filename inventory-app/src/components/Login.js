@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box } from '@mui/material';
-import { useNavigate } from 'react-router-dom'; 
+import { Container, TextField, Button, Typography, Box, Checkbox, FormControlLabel } from '@mui/material';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 function Login({ onLogin }) {
-  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '', rememberMe: false });
   const [message, setMessage] = useState('');
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value,
     });
   };
 
@@ -21,9 +23,9 @@ function Login({ onLogin }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
-      body: JSON.stringify(formData)
+      body: JSON.stringify(formData),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -31,13 +33,12 @@ function Login({ onLogin }) {
           setMessage(data.error);
         } else {
           setMessage(data.message);
-          localStorage.setItem('userToken', data.user_id); // Store userToken (user ID) in local storage
-          console.log('User ID:', data.user_id); // Debugging log
-          localStorage.setItem('username', formData.username); // Also store username for reference
-          localStorage.setItem('company_name', data.company_name); // Store company name in local storage
+          localStorage.setItem('userToken', data.user_id);
+          localStorage.setItem('username', formData.username);
+          localStorage.setItem('company_name', data.company_name);
 
-          onLogin(data.user_id);  // Pass user ID and company name to parent component
-          navigate('/home');  // Redirect to the homepage after successful login
+          onLogin(data.user_id);
+          navigate('/home');
         }
       })
       .catch((error) => {
@@ -47,40 +48,106 @@ function Login({ onLogin }) {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box mt={5}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Login
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Username"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-          <TextField
-            label="Password"
-            variant="outlined"
-            type="password"
-            fullWidth
-            margin="normal"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-          <Button variant="contained" color="primary" type="submit" fullWidth>
-            Login
-          </Button>
-        </form>
-        {message && <Typography color="error" mt={2}>{message}</Typography>}
-      </Box>
-    </Container>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      style={{
+        display: 'flex',
+        height: '100vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to right, #003973, #E5E5BE)',
+      }}
+    >
+      <Container
+        maxWidth="md"
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          bgcolor: 'white',
+          boxShadow: 3,
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Left Section with Image */}
+        <Box
+          sx={{
+            flex: 1,
+            display: { xs: 'none', md: 'block' },
+            backgroundImage: 'url("/path-to-your-image.jpg")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        ></Box>
+
+        {/* Right Section with Login Form */}
+        <Box
+          sx={{
+            flex: 1,
+            p: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography variant="h4" gutterBottom align="center" fontWeight="bold">
+            Login to <span style={{ color: '#0056b3' }}>DEALCOST</span>
+          </Typography>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              label="Username"
+              variant="outlined"
+              fullWidth
+              margin="normal"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+            <TextField
+              label="Password"
+              variant="outlined"
+              type="password"
+              fullWidth
+              margin="normal"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                />
+              }
+              label="Remember me"
+            />
+            <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>
+              Login
+            </Button>
+            {message && (
+              <Typography color="error" mt={2} align="center">
+                {message}
+              </Typography>
+            )}
+          </form>
+          <Box display="flex" justifyContent="space-between" mt={2}>
+            <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer' }}>
+              Forgot Password
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ cursor: 'pointer' }}>
+              Forgot Username
+            </Typography>
+          </Box>
+        </Box>
+      </Container>
+    </motion.div>
   );
 }
 

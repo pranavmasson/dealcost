@@ -1,22 +1,42 @@
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box, Select, MenuItem, InputLabel, FormControl, Grid } from '@mui/material';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+
+const formatDate = (date) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
 
 function AddCar() {
   const [formData, setFormData] = useState({
-    vin: '0',
+    vin: '',
     make: '',
     model: '',
     trim: '',
-    year: '0000',
-    mileage: '0',
+    year: '20',
+    mileage: '',
     color: '',
-    purchase_price: '0',
-    sale_price: '0',
-    sale_type: 'floor', // Default value for sale type
-    finance_type: 'cash', // Default value for finance type
-    closing_statement: '' // New field for closing statement
+    purchase_price: '',
+    sale_price: '',
+    sale_type: '',
+    finance_type: 'na',
+    closing_statement: '',
+    sale_status: 'available',
+    purchase_date: new Date(), // Initialize as Date object for DatePicker
+    title_received: 'na', // New field for "Title Received?"
+    pending_issues: '' // Added "Pending Issues" field
   });
   const [message, setMessage] = useState('');
+
+  const handleDateChange = (date) => {
+    setFormData({
+      ...formData,
+      purchase_date: date,
+    });
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -28,16 +48,16 @@ function AddCar() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const username = localStorage.getItem('username'); // Retrieve the username from local storage
-
+    const username = localStorage.getItem('username');
     if (!username || username === 'undefined') {
       setMessage('User ID is missing or invalid. Please log in again.');
       return;
     }
 
     const vehicleData = {
-      ...formData, // Spread formData to include all fields
-      username, // Include username in the payload
+      ...formData,
+      purchase_date: formatDate(formData.purchase_date), // Format the date before sending
+      username,
     };
 
     fetch('http://127.0.0.1:5000/api/insert_vehicle', {
@@ -66,98 +86,89 @@ function AddCar() {
   };
 
   return (
-    <Container maxWidth="md"> {/* Changed to 'md' for a wider container */}
+    <Container maxWidth="md">
       <Box mt={5}>
         <Typography variant="h4" component="h1" gutterBottom>
           Add Car
         </Typography>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}> {/* First Column */}
+            {/* Vehicle Details */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Vehicle Details</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
               <TextField
                 label="VIN"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="vin"
                 value={formData.vin}
                 onChange={handleChange}
                 required
               />
             </Grid>
-
-            <Grid item xs={12} sm={4}> {/* Second Column */}
+            <Grid item xs={12} sm={4}>
               <TextField
                 label="Make"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="make"
                 value={formData.make}
                 onChange={handleChange}
                 required
               />
             </Grid>
-
-            <Grid item xs={12} sm={4}> {/* Third Column */}
+            <Grid item xs={12} sm={4}>
               <TextField
                 label="Model"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="model"
                 value={formData.model}
                 onChange={handleChange}
                 required
               />
             </Grid>
-
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Trim"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="trim"
                 value={formData.trim}
                 onChange={handleChange}
               />
             </Grid>
-
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Year"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="year"
+                type="number"
                 value={formData.year}
                 onChange={handleChange}
-                type="number"
                 required
               />
             </Grid>
-
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Mileage"
                 variant="outlined"
                 fullWidth
-                margin="normal"
-                type="number"
                 name="mileage"
+                type="number"
                 value={formData.mileage}
                 onChange={handleChange}
                 required
               />
             </Grid>
-
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Color"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="color"
                 value={formData.color}
                 onChange={handleChange}
@@ -165,36 +176,49 @@ function AddCar() {
               />
             </Grid>
 
+            {/* Pending Issues */}
+            <Grid item xs={12} sm={8}>
+              <TextField
+                label="Pending Issues"
+                variant="outlined"
+                fullWidth
+                name="pending_issues"
+                value={formData.pending_issues}
+                onChange={handleChange}
+                multiline
+                rows={3}
+              />
+            </Grid>
+
+            {/* Financial Details */}
+            <Grid item xs={12} mt={2}>
+              <Typography variant="h6" gutterBottom>Financial Details</Typography>
+            </Grid>
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Purchase Price"
                 variant="outlined"
                 fullWidth
-                margin="normal"
-                type="number"
                 name="purchase_price"
+                type="number"
                 value={formData.purchase_price}
                 onChange={handleChange}
                 required
               />
             </Grid>
-
             <Grid item xs={12} sm={4}>
               <TextField
                 label="Sale Price"
                 variant="outlined"
                 fullWidth
-                margin="normal"
-                type="number"
                 name="sale_price"
+                type="number"
                 value={formData.sale_price}
                 onChange={handleChange}
               />
             </Grid>
-
-            {/* Dropdown for Sale Type */}
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth margin="normal" variant="outlined">
+              <FormControl fullWidth variant="outlined">
                 <InputLabel id="sale-type-label">Sale Type</InputLabel>
                 <Select
                   labelId="sale-type-label"
@@ -210,10 +234,8 @@ function AddCar() {
                 </Select>
               </FormControl>
             </Grid>
-
-            {/* Dropdown for Finance Type */}
             <Grid item xs={12} sm={4}>
-              <FormControl fullWidth margin="normal" variant="outlined">
+              <FormControl fullWidth variant="outlined">
                 <InputLabel id="finance-type-label">Finance Type</InputLabel>
                 <Select
                   labelId="finance-type-label"
@@ -223,6 +245,7 @@ function AddCar() {
                   onChange={handleChange}
                   required
                 >
+                  <MenuItem value="na">N/A</MenuItem>
                   <MenuItem value="cash">Cash</MenuItem>
                   <MenuItem value="finance">Finance</MenuItem>
                   <MenuItem value="outside finance">Outside Finance</MenuItem>
@@ -230,12 +253,40 @@ function AddCar() {
               </FormControl>
             </Grid>
 
+            {/* Title Received Dropdown */}
             <Grid item xs={12} sm={4}>
+              <FormControl fullWidth variant="outlined">
+                <InputLabel id="title-received-label">Title Received?</InputLabel>
+                <Select
+                  labelId="title-received-label"
+                  label="Title Received?"
+                  name="title_received"
+                  value={formData.title_received}
+                  onChange={handleChange}
+                  required
+                >
+                  <MenuItem value="yes">Yes</MenuItem>
+                  <MenuItem value="no">No</MenuItem>
+                  <MenuItem value="na">N/A</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Purchase Date and Closing Statement */}
+            <Grid item xs={12} sm={4}>
+              <label>Purchase Date</label>
+              <DatePicker
+                selected={formData.purchase_date}
+                onChange={handleDateChange}
+                dateFormat="MM/dd/yyyy"
+                customInput={<TextField variant="outlined" fullWidth />}
+              />
+            </Grid>
+            <Grid item xs={12} sm={8}>
               <TextField
                 label="Closing Statement"
                 variant="outlined"
                 fullWidth
-                margin="normal"
                 name="closing_statement"
                 value={formData.closing_statement}
                 onChange={handleChange}
@@ -244,8 +295,9 @@ function AddCar() {
               />
             </Grid>
 
-            <Grid item xs={12} sm={4}> {/* Submit Button */}
-              <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>
+            {/* Submit Button */}
+            <Grid item xs={12} mt={2}>
+              <Button variant="contained" color="primary" type="submit" fullWidth>
                 Add Car
               </Button>
             </Grid>

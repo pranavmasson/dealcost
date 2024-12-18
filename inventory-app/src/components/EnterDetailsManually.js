@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, MenuItem, Typography, Box } from '@mui/material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Box,
+  Button,
+  MenuItem,
+  Typography,
+  TextField,
+  Modal,
+} from '@mui/material';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-function EnterDetailsManually() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Extract VIN from the location state, if provided
-  const { vin } = location.state || {};
-
+function EnterDetailsManually({ open, onClose, initialVin }) {
   const [formData, setFormData] = useState({
-    vin: vin || '',  // Pre-fill the VIN if passed from previous page, otherwise leave it empty
+    vin: initialVin || '',
     category: '',
-    customCategory: '',  // To store custom category if selected
+    customCategory: '',
     notes: '',
     cost: '',
-    date_occurred: '',
-    service_provider: '',  // Changed from location to service provider
-    comments: ''  // Removed phone number and address
+    date_occurred: new Date(),
+    service_provider: '',
+    comments: '',
   });
 
-  const [isCustomCategory, setIsCustomCategory] = useState(false); // Track if custom category is selected
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   const categories = [
     'Sales Tax & DMV tag and Title',
@@ -38,7 +40,7 @@ function EnterDetailsManually() {
     'Inspection & Emission Cost',
     'Detailing Cost',
     'Parts',
-    'Custom'  // Add an option for custom category
+    'Custom',
   ];
 
   const handleChange = (e) => {
@@ -54,16 +56,32 @@ function EnterDetailsManually() {
     });
   };
 
+  const handleDateChange = (date) => {
+    setFormData({
+      ...formData,
+      date_occurred: date,
+    });
+  };
+
+  const formatDate = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Determine whether to send the custom category or the selected one
+    const username = localStorage.getItem('username');
+
     const reportData = {
       ...formData,
-      category: isCustomCategory ? formData.customCategory : formData.category
+      category: isCustomCategory ? formData.customCategory : formData.category,
+      date_occurred: formatDate(formData.date_occurred),
+      username,
     };
 
-    // Send the form data to the backend for MongoDB storage
     fetch('http://127.0.0.1:5000/api/insert_report', {
       method: 'POST',
       headers: {
@@ -77,7 +95,7 @@ function EnterDetailsManually() {
           alert('Error: ' + data.error);
         } else {
           alert('Report added successfully!');
-          navigate('/home'); // Navigate back to dashboard or another page after form submission
+          onClose(); // Close modal after success
         }
       })
       .catch((error) => {
@@ -85,9 +103,54 @@ function EnterDetailsManually() {
       });
   };
 
+  const handleScan = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/scan_document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        alert('Error scanning document: ' + data.error);
+      } else {
+        setFormData((prevData) => ({
+          ...prevData,
+          date_occurred: data.date_occurred ? new Date(data.date_occurred) : prevData.date_occurred,
+          service_provider: data.service_provider || prevData.service_provider,
+          cost: data.cost || prevData.cost,
+          vin: data.vin || prevData.vin,
+        }));
+      }
+    } catch (error) {
+      console.error('Error during OCR scan:', error);
+    }
+  };
+
   return (
-    <Container maxWidth="sm">
-      <Box mt={5}>
+    <Modal open={open} onClose={onClose} aria-labelledby="enter-details-modal">
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '90%',
+          maxWidth: '600px',
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: 2,
+          overflowY: 'auto',
+          maxHeight: '90vh',
+        }}
+      >
         <Typography variant="h4" gutterBottom>
           Enter Details Manually
         </Typography>
@@ -101,10 +164,9 @@ function EnterDetailsManually() {
             value={formData.vin}
             onChange={handleChange}
             required
-            InputProps={{ readOnly: !!vin }}  // Make VIN field read-only if pre-filled
+            InputProps={{ readOnly: !!initialVin }}
           />
 
-          {/* Category Dropdown */}
           <TextField
             select
             label="Category"
@@ -123,7 +185,6 @@ function EnterDetailsManually() {
             ))}
           </TextField>
 
-          {/* Custom Category Field */}
           {isCustomCategory && (
             <TextField
               label="Custom Category"
@@ -138,7 +199,7 @@ function EnterDetailsManually() {
           )}
 
           <TextField
-            label="Notes"
+            label="Description"
             variant="outlined"
             fullWidth
             margin="normal"
@@ -157,18 +218,17 @@ function EnterDetailsManually() {
             onChange={handleChange}
             required
           />
-          <TextField
-            label="Date Occurred"
-            variant="outlined"
-            type="date"
-            fullWidth
-            margin="normal"
-            name="date_occurred"
-            value={formData.date_occurred}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-            required
+
+          <Typography variant="h6" gutterBottom>
+            Date Occurred
+          </Typography>
+          <DatePicker
+            selected={formData.date_occurred}
+            onChange={handleDateChange}
+            dateFormat="MM/dd/yyyy"
+            customInput={<TextField variant="outlined" fullWidth />}
           />
+
           <TextField
             label="Service Provider"
             variant="outlined"
@@ -179,21 +239,24 @@ function EnterDetailsManually() {
             onChange={handleChange}
             required
           />
-          <TextField
-            label="Comments"
-            variant="outlined"
+
+          <Button
+            variant="contained"
+            component="label"
+            color="secondary"
             fullWidth
-            margin="normal"
-            name="comments"
-            value={formData.comments}
-            onChange={handleChange}
-          />
+            style={{ marginBottom: '10px' }}
+          >
+            Scan Document
+            <input type="file" hidden onChange={handleScan} accept="image/*" />
+          </Button>
+
           <Button variant="contained" color="primary" type="submit" fullWidth>
             Submit Report
           </Button>
         </form>
       </Box>
-    </Container>
+    </Modal>
   );
 }
 

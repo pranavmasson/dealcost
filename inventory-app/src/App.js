@@ -62,14 +62,15 @@ function App() {
 
       {/* AppBar with Menu Icon */}
       <AppBar
-        position="fixed"
-        sx={{
-          width: open ? `calc(100% - 240px)` : '100%',
-          ml: open ? `240px` : 0,
-          transition: 'width 0.3s ease',
-          backgroundColor: '#1763a6', // Changed color to #1763a6
-        }}
-      >
+  position="fixed"
+  sx={{
+    width: open ? `calc(100% - 240px)` : '100%', // Use template literals for calc
+    ml: open ? `240px` : 0, // Ensure consistent formatting
+    transition: 'width 0.3s ease',
+    backgroundColor: '#1763a6', // Changed color to #1763a6
+  }}
+>
+
         <Toolbar>
           <IconButton
             color="inherit"
@@ -80,11 +81,6 @@ function App() {
           >
             <MenuIcon />
           </IconButton>
-          {isAuthenticated && companyName && (
-            <Typography variant="h6" noWrap component="div">
-              {companyName || ''}
-            </Typography>
-          )}
         </Toolbar>
       </AppBar>
 
@@ -95,7 +91,7 @@ function App() {
         sx={{
           width: open ? 240 : 60, // Adjust width based on 'open' state
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: {
+          ['& .MuiDrawer-paper']: {
             width: open ? 240 : 60,
             boxSizing: 'border-box',
             backgroundColor: '#1763a6', // Changed color to #1763a6
