@@ -1,0 +1,31 @@
+# Backend Dependencies
+Flask==3.0.0
+Flask-CORS==4.0.0
+pymongo==4.6.1
+Werkzeug==3.0.1
+pytesseract==0.3.10
+Pillow==10.2.0
+python-dotenv==1.0.0
+bson==0.5.10
+datetime==5.4
+python-dateutil==2.8.2
+
+# Frontend Dependencies (package.json)
+@emotion/react==11.13.3
+@emotion/styled==11.13.0
+@mui/icons-material==6.1.0
+@mui/material==6.0.1
+axios==1.7.7
+chart.js==4.4.4
+chartjs-plugin-datalabels==2.2.0
+cors==2.8.5
+framer-motion==11.11.17
+react==18.3.1
+react-chartjs-2==5.2.0
+react-datepicker==7.5.0
+react-dom==18.3.1
+react-router-dom==6.26.1
+react-scripts==5.0.1
+
+# System Requirements
+tesseract-ocr>=4.1.1  # Required for pytesseract
