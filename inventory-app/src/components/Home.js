@@ -69,7 +69,7 @@ function Home() {
         }
 
         const response = await fetch(
-          `http://127.0.0.1:5000/api/dashboard?username=${username}`
+          `${process.env.REACT_APP_API_URL}/api/dashboard?username=${username}`
         );
         const data = await response.json();
         console.log('Raw response:', response);

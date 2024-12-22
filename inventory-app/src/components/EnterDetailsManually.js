@@ -82,7 +82,7 @@ function EnterDetailsManually({ open, onClose, initialVin }) {
       username,
     };
 
-    fetch('http://127.0.0.1:5000/api/insert_report', {
+    fetch('${process.env.REACT_APP_API_URL}/api/insert_report', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ function EnterDetailsManually({ open, onClose, initialVin }) {
     formData.append('image', file);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/scan_document', {
+      const response = await fetch('${process.env.REACT_APP_API_URL}/api/scan_document', {
         method: 'POST',
         body: formData,
       });

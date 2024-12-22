@@ -65,7 +65,7 @@ function UserSettings({ isDarkMode, onThemeChange }) {
       const userId = localStorage.getItem('userToken');
       if (userId) {
         try {
-          const response = await fetch(`http://127.0.0.1:5000/api/user/${userId}`);
+          const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/${userId}`);
           const data = await response.json();
           console.log('Response from server:', data);
           
@@ -132,7 +132,7 @@ function UserSettings({ isDarkMode, onThemeChange }) {
     console.log('Sending update data:', updateData);  // Debug log
 
     try {
-        const response = await fetch(`http://127.0.0.1:5000/api/user/${userId}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/${userId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

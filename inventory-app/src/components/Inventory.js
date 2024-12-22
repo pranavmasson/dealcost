@@ -79,7 +79,7 @@ function Inventory() {
     const fetchInventory = async () => {
       try {
         const username = localStorage.getItem('username');
-        const response = await fetch(`http://127.0.0.1:5000/api/inventory?username=${username}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/inventory?username=${username}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -109,7 +109,7 @@ function Inventory() {
   const calculateReconditioningCosts = async (inventory, username) => {
     const costs = {};
     for (const item of inventory) {
-      const response = await fetch(`http://127.0.0.1:5000/api/reports?vin=${item.vin}&username=${username}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/reports?vin=${item.vin}&username=${username}`);
       const data = await response.json();
       if (response.ok) {
         const totalCost = data.records.reduce((sum, record) => sum + parseFloat(record.cost || 0), 0);
@@ -135,7 +135,7 @@ function Inventory() {
   const handleDeleteCar = async (vin) => {
     try {
       const username = localStorage.getItem('username');
-      const response = await fetch(`http://127.0.0.1:5000/api/delete_vehicle`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/delete_vehicle`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vin, username }),

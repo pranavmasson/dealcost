@@ -105,7 +105,7 @@ function ViewDeal() {
   useEffect(() => {
     const fetchCarDetails = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/inventory/${vin}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/inventory/${vin}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -127,7 +127,7 @@ function ViewDeal() {
   useEffect(() => {
     const fetchMaintenanceRecords = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/reports?vin=${vin}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/reports?vin=${vin}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -152,7 +152,7 @@ function ViewDeal() {
 
   const handleDeleteRecord = async (recordId) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/delete_report`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/delete_report`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

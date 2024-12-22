@@ -17,7 +17,7 @@ function EditReport() {
 
   useEffect(() => {
     // Fetch the existing report data using reportId
-    fetch(`http://127.0.0.1:5000/api/report/${reportId}`)
+    fetch(`${process.env.REACT_APP_API_URL}/api/report/${reportId}`)
       .then(response => response.json())
       .then(data => {
         if (data.error) {
@@ -39,7 +39,7 @@ function EditReport() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Submit updated data to the server
-    fetch(`http://127.0.0.1:5000/api/report/${reportId}`, {
+    fetch(`${process.env.REACT_APP_API_URL}/api/report/${reportId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
