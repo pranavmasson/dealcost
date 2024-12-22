@@ -66,7 +66,7 @@ function AddCar() {
     };
 
     try {
-      const response = await fetch('${process.env.REACT_APP_API_URL}/api/insert_vehicle', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/insert_vehicle`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
