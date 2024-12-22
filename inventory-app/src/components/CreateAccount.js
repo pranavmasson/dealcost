@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Grid } from '@mui/material';
 import { motion } from 'framer-motion';
 
 function CreateAccount() {
@@ -9,6 +9,11 @@ function CreateAccount() {
     email: '',
     company_name: '',
     phone_number: '',
+    street_address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'USA'
   });
 
   const [message, setMessage] = useState('');
@@ -101,58 +106,117 @@ function CreateAccount() {
           <Typography variant="h4" gutterBottom align="center" fontWeight="bold">
             Create an <span style={{ color: '#0056b3' }}>Account</span>
           </Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              label="Username"
-              variant="outlined"
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Company Name"
+                  name="company_name"
+                  value={formData.company_name}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Phone Number"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Street Address"
+                  name="street_address"
+                  value={formData.street_address}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="City"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="State"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="ZIP Code"
+                  name="zip_code"
+                  value={formData.zip_code}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  required
+                  fullWidth
+                  label="Country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                />
+              </Grid>
+            </Grid>
+            <Button
+              type="submit"
               fullWidth
-              margin="normal"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              label="Password"
-              variant="outlined"
-              type="password"
-              fullWidth
-              margin="normal"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              label="Email"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              label="Company Name"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              name="company_name"
-              value={formData.company_name}
-              onChange={handleChange}
-              required
-            />
-            <TextField
-              label="Phone Number"
-              variant="outlined"
-              fullWidth
-              margin="normal"
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleChange}
-            />
-            <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
               Create Account
             </Button>
             {message && (
@@ -160,7 +224,7 @@ function CreateAccount() {
                 {message}
               </Typography>
             )}
-          </form>
+          </Box>
         </Box>
       </Container>
     </motion.div>

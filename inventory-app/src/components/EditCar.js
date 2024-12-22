@@ -16,6 +16,7 @@ import {
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -40,8 +41,9 @@ function EditCar({ open, onClose, vin }) {
     sale_status: 'available',
     purchase_date: new Date(),
     title_received: 'na',
+    inspection_received: 'no',
     closing_statement: '',
-    pending_issues: '', // Added field for Pending Issues
+    pending_issues: '',
     date_sold: null,
   });
   const [message, setMessage] = useState('');
@@ -62,7 +64,7 @@ function EditCar({ open, onClose, vin }) {
             ...data,
             purchase_date: data.purchase_date ? new Date(data.purchase_date) : new Date(),
             date_sold: data.date_sold ? new Date(data.date_sold) : null,
-            pending_issues: data.pending_issues || '', // Initialize pending issues if present
+            pending_issues: data.pending_issues || '',
           });
         } else {
           setMessage('Failed to load car details');
@@ -130,237 +132,595 @@ function EditCar({ open, onClose, vin }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="edit-car-modal" aria-describedby="edit-car-details">
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '90%',
-          maxWidth: '600px',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2,
-          overflowY: 'auto',
-          maxHeight: '90vh',
-        }}
-      >
-        {loading ? (
-          <Typography variant="h6">Loading...</Typography>
-        ) : (
-          <>
-            <Typography variant="h4" gutterBottom>
-              Edit Car
-            </Typography>
-            <form onSubmit={handleSubmit}>
-              <Typography variant="h6" gutterBottom>
-                Vehicle Details
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="VIN"
-                    name="vin"
-                    value={formData.vin}
-                    onChange={handleChange}
-                    fullWidth
-                    disabled
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Make"
-                    name="make"
-                    value={formData.make}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Model"
-                    name="model"
-                    value={formData.model}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Trim"
-                    name="trim"
-                    value={formData.trim}
-                    onChange={handleChange}
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Year"
-                    name="year"
-                    type="number"
-                    value={formData.year}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Mileage"
-                    name="mileage"
-                    type="number"
-                    value={formData.mileage}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Pending Issues"
-                    name="pending_issues"
-                    value={formData.pending_issues}
-                    onChange={handleChange}
-                    fullWidth
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Color"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                  />
-                </Grid>
-              </Grid>
-              <Box mt={4}>
-                <Typography variant="h6" gutterBottom>
-                  Financial Details
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Purchase Price"
-                      name="purchase_price"
-                      type="number"
-                      value={formData.purchase_price}
-                      onChange={handleChange}
-                      fullWidth
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Sale Price"
-                      name="sale_price"
-                      type="number"
-                      value={formData.sale_price}
-                      onChange={handleChange}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Sale Type</InputLabel>
-                      <Select
-                        name="sale_type"
-                        value={formData.sale_type}
-                        onChange={handleChange}
+    <AnimatePresence>
+      {open && (
+        <Modal 
+          open={open} 
+          onClose={onClose}
+          aria-labelledby="edit-car-modal"
+          aria-describedby="edit-car-details"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", duration: 0.5 }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '90%',
+                maxWidth: '800px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                bgcolor: 'background.paper',
+                borderRadius: 3,
+                boxShadow: theme => theme.palette.mode === 'dark'
+                  ? '0 0 30px rgba(0, 0, 0, 0.5)'
+                  : '0 0 30px rgba(0, 0, 0, 0.2)',
+                p: 4,
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#888',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: '#666',
+                },
+              }}
+            >
+              {loading ? (
+                <Typography variant="h6">Loading...</Typography>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      mb: 4,
+                      fontWeight: 700,
+                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      textAlign: 'center'
+                    }}
+                  >
+                    Edit Vehicle Details
+                  </Typography>
+
+                  <form onSubmit={handleSubmit}>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 2,
+                          color: 'text.secondary',
+                          fontWeight: 600
+                        }}
                       >
-                        <MenuItem value="floor">Floor</MenuItem>
-                        <MenuItem value="dealer">Dealer</MenuItem>
-                        <MenuItem value="consignment">Consignment</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Finance Type</InputLabel>
-                      <Select
-                        name="finance_type"
-                        value={formData.finance_type}
-                        onChange={handleChange}
+                        Vehicle Information
+                      </Typography>
+
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="VIN"
+                            name="vin"
+                            value={formData.vin}
+                            onChange={handleChange}
+                            fullWidth
+                            disabled
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Make"
+                            name="make"
+                            value={formData.make}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Model"
+                            name="model"
+                            value={formData.model}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Trim"
+                            name="trim"
+                            value={formData.trim}
+                            onChange={handleChange}
+                            fullWidth
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Year"
+                            name="year"
+                            type="number"
+                            value={formData.year}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Mileage"
+                            name="mileage"
+                            type="number"
+                            value={formData.mileage}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Pending Issues"
+                            name="pending_issues"
+                            value={formData.pending_issues}
+                            onChange={handleChange}
+                            fullWidth
+                            multiline
+                            rows={2}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Color"
+                            name="color"
+                            value={formData.color}
+                            onChange={handleChange}
+                            fullWidth
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+
+                      <Box mt={4}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            mb: 2,
+                            color: 'text.secondary',
+                            fontWeight: 600
+                          }}
+                        >
+                          Financial Details
+                        </Typography>
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              label="Purchase Price"
+                              name="purchase_price"
+                              type="number"
+                              value={formData.purchase_price}
+                              onChange={handleChange}
+                              fullWidth
+                              required
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                                    transition: 'border-color 0.3s',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              label="Sale Price"
+                              name="sale_price"
+                              type="number"
+                              value={formData.sale_price}
+                              onChange={handleChange}
+                              fullWidth
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                                    transition: 'border-color 0.3s',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                              <InputLabel>Sale Type</InputLabel>
+                              <Select
+                                name="sale_type"
+                                value={formData.sale_type}
+                                onChange={handleChange}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="floor">Floor</MenuItem>
+                                <MenuItem value="dealer">Dealer</MenuItem>
+                                <MenuItem value="consignment">Consignment</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                              <InputLabel>Finance Type</InputLabel>
+                              <Select
+                                name="finance_type"
+                                value={formData.finance_type}
+                                onChange={handleChange}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="na">N/A</MenuItem>
+                                <MenuItem value="cash">Cash</MenuItem>
+                                <MenuItem value="finance">Finance</MenuItem>
+                                <MenuItem value="outside finance">Outside Finance</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <FormControl fullWidth>
+                              <InputLabel>Title Received?</InputLabel>
+                              <Select
+                                name="title_received"
+                                value={formData.title_received}
+                                onChange={handleChange}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                                <MenuItem value="na">N/A</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <FormControl fullWidth>
+                              <InputLabel>inspection Done?</InputLabel>
+                              <Select
+                                name="inspection_received"
+                                value={formData.inspection_received}
+                                onChange={handleChange}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="yes">Yes</MenuItem>
+                                <MenuItem value="no">No</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <TextField
+                              label="Closing Statement"
+                              name="closing_statement"
+                              value={formData.closing_statement}
+                              onChange={handleChange}
+                              fullWidth
+                              multiline
+                              rows={3}
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                                    transition: 'border-color 0.3s',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                          <Grid item xs={12}>
+                            <DatePicker
+                              selected={formData.purchase_date}
+                              onChange={(date) => handleDateChange('purchase_date', date)}
+                              customInput={<TextField label="Purchase Date" fullWidth />}
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                                    transition: 'border-color 0.3s',
+                                  },
+                                  '&:hover fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                },
+                              }}
+                            />
+                          </Grid>
+                          {formData.sale_status === 'sold' && (
+                            <Grid item xs={12}>
+                              <DatePicker
+                                selected={formData.date_sold}
+                                onChange={(date) => handleDateChange('date_sold', date)}
+                                customInput={<TextField label="Date Sold" fullWidth />}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              />
+                            </Grid>
+                          )}
+                          <Grid item xs={12}>
+                            <FormControlLabel
+                              control={<Switch checked={formData.sale_status === 'sold'} onChange={handleToggleSaleStatus} />}
+                              label={formData.sale_status === 'sold' ? 'Sold' : 'Available'}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      <Box mt={4} textAlign="right">
+                        <motion.div
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            sx={{
+                              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                              color: 'white',
+                              px: 4,
+                              py: 1.5,
+                              borderRadius: 2,
+                              boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                background: 'linear-gradient(45deg, #2196F3 60%, #21CBF3 90%)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 6px 10px 2px rgba(33, 203, 243, .3)',
+                              },
+                            }}
+                          >
+                            Save Changes
+                          </Button>
+                        </motion.div>
+                      </Box>
+                    </motion.div>
+                  </form>
+
+                  {message && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Typography
+                        sx={{
+                          mt: 2,
+                          p: 2,
+                          borderRadius: 2,
+                          textAlign: 'center',
+                          color: message.includes('success') ? 'success.main' : 'error.main',
+                          bgcolor: message.includes('success') ? 'success.lighter' : 'error.lighter',
+                        }}
                       >
-                        <MenuItem value="na">N/A</MenuItem>
-                        <MenuItem value="cash">Cash</MenuItem>
-                        <MenuItem value="finance">Finance</MenuItem>
-                        <MenuItem value="outside finance">Outside Finance</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <FormControl fullWidth>
-                      <InputLabel>Title Received?</InputLabel>
-                      <Select
-                        name="title_received"
-                        value={formData.title_received}
-                        onChange={handleChange}
-                      >
-                        <MenuItem value="yes">Yes</MenuItem>
-                        <MenuItem value="no">No</MenuItem>
-                        <MenuItem value="na">N/A</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      label="Closing Statement"
-                      name="closing_statement"
-                      value={formData.closing_statement}
-                      onChange={handleChange}
-                      fullWidth
-                      multiline
-                      rows={3}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <DatePicker
-                      selected={formData.purchase_date}
-                      onChange={(date) => handleDateChange('purchase_date', date)}
-                      customInput={<TextField label="Purchase Date" fullWidth />}
-                    />
-                  </Grid>
-                  {formData.sale_status === 'sold' && (
-                    <Grid item xs={12}>
-                      <DatePicker
-                        selected={formData.date_sold}
-                        onChange={(date) => handleDateChange('date_sold', date)}
-                        customInput={<TextField label="Date Sold" fullWidth />}
-                      />
-                    </Grid>
+                        {message}
+                      </Typography>
+                    </motion.div>
                   )}
-                  <Grid item xs={12}>
-                    <FormControlLabel
-                      control={<Switch checked={formData.sale_status === 'sold'} onChange={handleToggleSaleStatus} />}
-                      label={formData.sale_status === 'sold' ? 'Sold' : 'Available'}
-                    />
-                  </Grid>
-                </Grid>
-              </Box>
-              <Box mt={3} textAlign="right">
-                <Button type="submit" variant="contained" color="primary">
-                  Save Changes
-                </Button>
-              </Box>
-            </form>
-            {message && (
-              <Typography color={message.includes('success') ? 'green' : 'red'} mt={2}>
-                {message}
-              </Typography>
-            )}
-          </>
-        )}
-      </Box>
-    </Modal>
+                </motion.div>
+              )}
+            </Box>
+          </motion.div>
+        </Modal>
+      )}
+    </AnimatePresence>
   );
 }
 

@@ -37,13 +37,11 @@ def create_account():
     if request.method == 'OPTIONS':
         # Preflight request handling
         response = app.make_default_options_response()
-        headers = None
-        if request.method == 'OPTIONS':
-            headers = {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-            }
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
         response.headers.update(headers)
         return response
     try:
@@ -51,7 +49,13 @@ def create_account():
         print(user_data)
 
         # Validate the incoming data
-        if not all(k in user_data for k in ("username", "password", "email", "company_name", "phone_number")):
+        required_fields = [
+            "username", "password", "email", "company_name", 
+            "phone_number", "street_address", "city", "state", 
+            "zip_code", "country"
+        ]
+        
+        if not all(k in user_data for k in required_fields):
             return jsonify({"error": "Missing required fields"}), 400
         
         password_hash = generate_password_hash(user_data["password"], method='pbkdf2:sha256')
@@ -62,7 +66,14 @@ def create_account():
             "password": password_hash,
             "email": user_data["email"],
             "company_name": user_data["company_name"],
-            "phone_number": user_data.get("phone_number")
+            "phone_number": user_data["phone_number"],
+            "address": {
+                "street": user_data["street_address"],
+                "city": user_data["city"],
+                "state": user_data["state"],
+                "zip_code": user_data["zip_code"],
+                "country": user_data["country"]
+            }
         }
         result = users_collection.insert_one(new_user)
 
@@ -86,31 +97,23 @@ def login():
 
     try:
         login_data = request.json
-
-        # Validate the incoming data
-        if not all(k in login_data for k in ("username", "password")):
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Retrieve user by username
         user = users_collection.find_one({"username": login_data["username"]})
         
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # Check if the provided password matches the stored password hash
         if not check_password_hash(user.get("password", ""), login_data["password"]):
             return jsonify({"error": "Invalid username or password"}), 401
-        
-        print(user["company_name"])
 
+        # Ensure we're sending back the correct data
         return jsonify({
             "message": "Login successful",
             "user_id": str(user["_id"]),
-            "company_name": str(user["company_name"])  # Safely retrieve company_name
+            "username": user["username"],  # This is the actual username
+            "company_name": user.get("company_name", "")
         }), 200
 
     except Exception as e:
-        # Print error to console for debugging
         print(f"An error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
@@ -157,7 +160,9 @@ def insert_vehicle():
             "finance_type": vehicle_data.get("finance_type", ""),
             "purchase_date": vehicle_data.get("purchase_date", ""),
             "title_received": vehicle_data.get("title_received", ""),
-            "pending_issues": vehicle_data.get("pending_issues", "")
+            "inspection_received": vehicle_data.get("inspection_received", "no"),  # Add inspection field
+            "pending_issues": vehicle_data.get("pending_issues", ""),
+            "inspection_status": vehicle_data.get("inspection_status", "")
         }
         result = inventory_collection.insert_one(new_vehicle)
 
@@ -274,48 +279,78 @@ def delete_report():
 @app.route('/api/user/<user_id>', methods=['GET'])
 def get_user(user_id):
     try:
+        print(f"Searching for user with ID: {user_id}")
         user = users_collection.find_one({"_id": ObjectId(user_id)})
+        print(f"Found user: {user}")
+        
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # Exclude password hash when returning user data
         user_data = {
             "username": user["username"],
             "email": user["email"],
             "company_name": user["company_name"],
-            "phone_number": user.get("phone_number", "")
+            "phone_number": user.get("phone_number", ""),
+            "address": {
+                "street": user.get("address", {}).get("street", ""),
+                "city": user.get("address", {}).get("city", ""),
+                "state": user.get("address", {}).get("state", ""),
+                "zip_code": user.get("address", {}).get("zip_code", ""),
+                "country": user.get("address", {}).get("country", "")
+            }
         }
 
         return jsonify(user_data), 200
     except Exception as e:
+        print(f"Error in get_user: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/user/<user_id>', methods=['PUT'])
 def update_user(user_id):
     try:
-        user_data = request.json
-        # Validate the incoming data
-        if not all(k in user_data for k in ("username", "email", "company_name")):
-            return jsonify({"error": "Missing required fields"}), 400
+        print(f"Received update request for user_id: {user_id}")
+        data = request.json
+        print(f"Update data received: {data}")
 
-        # Update user data in the database
-        update_result = users_collection.update_one(
+        # First check if user exists
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            print(f"No user found with ID: {user_id}")
+            return jsonify({"error": "User not found"}), 404
+
+        # Create address object matching the existing structure
+        address = {
+            "street": data.get("street_address", ""),
+            "city": data.get("city", ""),
+            "country": data.get("country", ""),
+            "state": data.get("state", ""),
+            "zip_code": data.get("zip_code", "")
+        }
+
+        update_data = {
+            "username": data["username"],
+            "email": data["email"],
+            "company_name": data["company_name"],
+            "phone_number": data["phone_number"],
+            "address": address
+        }
+
+        print(f"Updating with data: {update_data}")
+
+        result = users_collection.update_one(
             {"_id": ObjectId(user_id)},
-            {"$set": {
-                "username": user_data["username"],
-                "email": user_data["email"],
-                "company_name": user_data["company_name"],
-                "phone_number": user_data.get("phone_number", "")
-            }}
+            {"$set": update_data}
         )
-
-        if update_result.modified_count == 0:
-            return jsonify({"error": "User not updated"}), 404
-
-        return jsonify({"message": "User updated successfully"}), 200
+        
+        print(f"Update result: {result.modified_count} documents modified")
+        
+        if result.modified_count > 0 or result.matched_count > 0:
+            return jsonify({"message": "User updated successfully"}), 200
+        else:
+            return jsonify({"error": "No changes made"}), 200
 
     except Exception as e:
+        print(f"Error in update_user: {str(e)}")
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/update_vehicle/<vin>', methods=['PUT'])
@@ -335,6 +370,7 @@ def update_vehicle(vin):
             "sale_status": vehicle_data["sale_status"],
             "purchase_date": vehicle_data.get("purchase_date", ""),
             "title_received": vehicle_data.get("title_received", ""),
+            "inspection_received": vehicle_data.get("inspection_received", "no"),  # Add inspection field
             "closing_statement": vehicle_data.get("closing_statement", ""),
             "pending_issues": vehicle_data.get("pending_issues", ""),
         }
@@ -412,96 +448,53 @@ def update_report(report_id):
 def get_dashboard_data():
     try:
         username = request.args.get('username')
+        print(f"Received request for username: {username}")
+        
         if not username:
             return jsonify({"error": "Username is required"}), 400
 
-        # Set date range for the last 30 days
-        now = datetime.now()
-        thirty_days_ago = now - timedelta(days=30)
+        # Debug: Check if we can find any inventory for this user's _id
+        inventory_count = inventory_collection.count_documents({"username": username})
+        print(f"Found {inventory_count} inventory items for user ID {username}")
 
-        # Helper function to safely convert values to float
-        def to_float(value):
-            try:
-                return float(value)
-            except (TypeError, ValueError):
-                return 0.0
-
-        # Fetch available cars owned by the user
-        available_cars = list(inventory_collection.find({"username": username, "sale_status": "available"}))
-        total_vehicles = len(available_cars)
-        total_inventory_value = sum(to_float(car.get('purchase_price', 0)) for car in available_cars)
+        # Get all inventory using the user's _id
+        all_inventory = list(inventory_collection.find({"username": username}))
+        print(f"Retrieved inventory: {all_inventory}")
         
-        # Debugging: Log available cars and inventory value
-        print(f"Available Cars: {available_cars}")
-        print(f"Total Vehicles: {total_vehicles}")
-        print(f"Total Inventory Value: {total_inventory_value}")
+        # Convert ObjectId to string for JSON serialization
+        for car in all_inventory:
+            car['_id'] = str(car['_id'])
 
-        # Fetch sold cars for the user
-        sold_cars = list(inventory_collection.find({"username": username, "sale_status": "sold"}))
+        # Get all unsold inventory
+        unsold_inventory = [car for car in all_inventory if car.get('sale_status') != 'sold']
+        print(f"Unsold inventory count: {len(unsold_inventory)}")
 
-        # Calculate profit for cars sold within the last 30 days
-        current_month_profit = 0
-        for car in sold_cars:
-            if 'date_sold' in car and car['date_sold']:
-                date_sold = datetime.strptime(car['date_sold'], "%m/%d/%Y")
-                
-                # Check if the sale date is within the last 30 days
-                if thirty_days_ago <= date_sold <= now:
-                    sale_price = to_float(car.get('sale_price', 0))
-                    purchase_price = to_float(car.get('purchase_price', 0))
-                    vin = car.get('vin')
+        # Calculate metrics
+        total_vehicles = len(unsold_inventory)
+        total_inventory_value = sum(float(car.get('purchase_price', 0)) for car in unsold_inventory)
+        
+        # Get counts by sale type
+        total_floor_plan = sum(1 for car in unsold_inventory if car.get('sale_type') == 'floor')
+        total_dealership = sum(1 for car in unsold_inventory if car.get('sale_type') == 'dealer')
+        total_consignment = sum(1 for car in unsold_inventory if car.get('sale_type') == 'consignment')
 
-                    # Fetch the reconditioning costs for this car
-                    reconditioning_cost = sum(
-                        to_float(report.get('cost', 0))
-                        for report in reports_collection.find({"vin": vin, "username": username})
-                    )
-
-                    # Calculate profit and add to total
-                    profit = sale_price - purchase_price - reconditioning_cost
-                    current_month_profit += profit
-
-                    # Debugging: Log each car’s profit calculation
-                    print(f"Sold Car VIN: {vin}")
-                    print(f"Date Sold: {date_sold}, Sale Price: {sale_price}, Purchase Price: {purchase_price}")
-                    print(f"Reconditioning Cost: {reconditioning_cost}, Profit: {profit}")
-
-        # Log final gross profit
-        print(f"Current Month Gross Profit: {current_month_profit}")
-
-        # Fetch all reconditioning reports for the user to calculate monthly reconditioning cost
-        maintenance_reports = list(reports_collection.find({"username": username}))
-        current_month_reconditioning_cost = sum(
-            to_float(report.get('cost', 0))
-            for report in maintenance_reports
-            if 'date_occurred' in report and thirty_days_ago <= datetime.strptime(report['date_occurred'], "%m/%d/%Y") <= now
-        )
-
-        # Total reconditioning cost for available cars
-        total_reconditioning_cost = sum(
-            to_float(report.get('cost', 0))
-            for report in reports_collection.find({"vin": {"$in": [car['vin'] for car in available_cars]}})
-        )
-
-        # Count floor plan and dealership inventory for available cars
-        total_floor_plan = sum(1 for car in available_cars if car.get('sale_type') == 'floor')
-        total_dealership = sum(1 for car in available_cars if car.get('sale_type') == 'dealer')
-        total_consignment = sum(1 for car in available_cars if car.get('sale_type') == 'consignment')
-
-        # Return dashboard metrics
-        return jsonify({
+        response_data = {
+            "inventory": all_inventory,
             "total_vehicles": total_vehicles,
             "total_inventory_value": total_inventory_value,
-            "total_reconditioning_cost": total_reconditioning_cost,
-            "current_month_reconditioning_cost": current_month_reconditioning_cost,
-            "current_month_profit": current_month_profit,
+            "current_month_reconditioning_cost": 0,
+            "current_month_profit": 0,
             "total_floor_plan": total_floor_plan,
             "total_dealership": total_dealership,
             "total_consignment": total_consignment,
-        }), 200
+            "unsold_reconditioning_cost": 0,
+        }
+        
+        print(f"Sending response data: {response_data}")
+        return jsonify(response_data), 200
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Dashboard Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/scan_document', methods=['POST'])
@@ -555,6 +548,19 @@ def extract_cost(text):
         # Ensure the dollar sign is included, even if OCR missed it
         return cost if cost.startswith('$') else f"${cost}"
     return None
+
+@app.route('/api/company_name/<username>', methods=['GET'])
+def get_company_name(username):
+    try:
+        user = users_collection.find_one({"username": username})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        return jsonify({
+            "company_name": user.get("company_name", "")
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

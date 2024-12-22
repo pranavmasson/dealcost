@@ -34,7 +34,7 @@ function Login({ onLogin }) {
         } else {
           setMessage(data.message);
           localStorage.setItem('userToken', data.user_id);
-          localStorage.setItem('username', formData.username);
+          localStorage.setItem('username', data.user_id);
           localStorage.setItem('company_name', data.company_name);
 
           onLogin(data.user_id);

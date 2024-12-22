@@ -18,6 +18,13 @@ import {
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { motion, AnimatePresence } from 'framer-motion';
+import { alpha } from '@mui/material/styles';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
+import AddIcon from '@mui/icons-material/Add';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 ChartJS.register(ChartDataLabels);
@@ -188,10 +195,34 @@ function ViewDeal() {
     datasets: [
       {
         data: maintenanceCostsByCategory,
-        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#66BB6A', '#EF5350', '#AB47BC'],
-        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#66BB6A', '#EF5350', '#AB47BC'],
-      },
-    ],
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.8)',   // Blue
+          'rgba(255, 99, 132, 0.8)',   // Pink
+          'rgba(255, 206, 86, 0.8)',   // Yellow
+          'rgba(75, 192, 192, 0.8)',   // Teal
+          'rgba(153, 102, 255, 0.8)',  // Purple
+          'rgba(255, 159, 64, 0.8)',   // Orange
+          'rgba(46, 204, 113, 0.8)',   // Green
+          'rgba(142, 68, 173, 0.8)',   // Dark Purple
+          'rgba(241, 196, 15, 0.8)',   // Yellow
+          'rgba(231, 76, 60, 0.8)'     // Red
+        ],
+        hoverBackgroundColor: [
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 99, 132, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)',
+          'rgba(46, 204, 113, 1)',
+          'rgba(142, 68, 173, 1)',
+          'rgba(241, 196, 15, 1)',
+          'rgba(231, 76, 60, 1)'
+        ],
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }
+    ]
   };
 
   const pieOptions = {
@@ -199,181 +230,476 @@ function ViewDeal() {
     maintainAspectRatio: false,
     plugins: {
       tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleFont: {
+          size: 14,
+          weight: 'bold'
+        },
+        bodyFont: {
+          size: 13
+        },
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
         callbacks: {
-          label: function (tooltipItem) {
+          label: function(tooltipItem) {
             const total = maintenanceCostsByCategory.reduce((sum, value) => sum + value, 0);
             const value = tooltipItem.raw;
-            const percent = ((value / total) * 100).toFixed(2);
-            return `${tooltipItem.label}: $${value} (${percent}%)`;
+            const percent = ((value / total) * 100).toFixed(1);
+            return `$${value.toFixed(2)} (${percent}%)`;
           },
-        },
+          title: function(tooltipItems) {
+            return tooltipItems[0].label;
+          }
+        }
+      },
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 20,
+          font: {
+            size: 13
+          },
+          generateLabels: function(chart) {
+            const data = chart.data;
+            if (data.labels.length && data.datasets.length) {
+              const total = data.datasets[0].data.reduce((sum, value) => sum + value, 0);
+              return data.labels.map((label, i) => {
+                const value = data.datasets[0].data[i];
+                const percent = ((value / total) * 100).toFixed(1);
+                return {
+                  text: `${label} - $${value.toFixed(2)} (${percent}%)`,
+                  fillStyle: data.datasets[0].backgroundColor[i],
+                  hidden: isNaN(data.datasets[0].data[i]),
+                  lineCap: 'round',
+                  lineDash: [],
+                  lineDashOffset: 0,
+                  lineJoin: 'round',
+                  lineWidth: 1,
+                  strokeStyle: '#fff',
+                  pointStyle: 'circle',
+                  index: i
+                };
+              });
+            }
+            return [];
+          }
+        }
       },
       datalabels: {
         color: '#fff',
-        formatter: (value) => `$${value}`,
-        anchor: 'end',
-        align: 'start',
-        offset: -10,
-        borderWidth: 2,
-        borderColor: '#fff',
-        borderRadius: 25,
-        backgroundColor: (context) => context.dataset.backgroundColor,
-        padding: 6,
-      },
-      legend: {
-        position: 'top',
-      },
+        font: {
+          weight: 'bold',
+          size: 11
+        },
+        formatter: (value, ctx) => {
+          const total = ctx.dataset.data.reduce((sum, val) => sum + val, 0);
+          const percentage = ((value / total) * 100).toFixed(1);
+          return percentage > 5 ? `${percentage}%` : ''; // Only show label if segment is > 5%
+        },
+        anchor: 'center',
+        align: 'center',
+        offset: 0,
+        padding: 0
+      }
     },
+    elements: {
+      arc: {
+        borderWidth: 2,
+        borderColor: '#fff'
+      }
+    },
+    cutout: '60%', // Makes it a donut chart
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box mt={5}>
-        <Typography variant="h4" gutterBottom>
-          VIN: {vin}
-        </Typography>
-        <Typography variant="h6" gutterBottom>
-          {`${yearMakeModel.year} ${yearMakeModel.make.toUpperCase()} ${yearMakeModel.model.toUpperCase()}`}
-        </Typography>
-
-        <Box display="flex" justifyContent="flex-end" gap={2}>
-        <Button variant="contained" color="primary" onClick={handlePrint}>
-    Print Report
-  </Button>
-        </Box>
-
-        <Box display="flex" flexDirection="column" alignItems="left">
-
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6} style={{ height: '400px', width: '400px' }}>
-              <Pie data={pieData} options={pieOptions} />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Typography variant="h5" gutterBottom>
-                DealCost
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Total Maintenance Cost"
-                    value={`$${totalMaintenanceCost.toFixed(2)}`}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Container maxWidth="lg">
+        <Box mt={5}>
+          {/* Header Section */}
+          <motion.div
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                p: 4,
+                borderRadius: 3,
+                background: theme => `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={8}>
+                  <Typography variant="h4" gutterBottom sx={{ 
+                    fontWeight: 700,
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}>
+                    {`${yearMakeModel.year} ${yearMakeModel.make.toUpperCase()} ${yearMakeModel.model.toUpperCase()}`}
+                  </Typography>
+                  <Typography variant="h6" color="textSecondary">
+                    VIN: {vin}
+                  </Typography>
                 </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Purchase Price"
-                    value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}
-                    fullWidth
-                    type="number"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Sale Price"
-                    value={salePrice}
-                    onChange={(e) => setSalePrice(parseFloat(e.target.value) || 0)}
-                    fullWidth
-                    type="number"
-                  />
-                </Grid>
-
-                {/* Horizontal Black Bar */}
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: '2px',
-                      backgroundColor: 'black',
-                      marginY: 2, // Adds spacing above and below the bar
-                    }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Total Cost"
-                    value={`$${(purchasePrice + totalMaintenanceCost).toFixed(2)}`}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Gross Profit"
-                    value={`$${(salePrice - (purchasePrice + totalMaintenanceCost)).toFixed(2)}`}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
+                <Grid item xs={12} md={4}>
+                  <Box display="flex" justifyContent="flex-end">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<LocalPrintshopIcon />}
+                        onClick={handlePrint}
+                        sx={{
+                          background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                          color: 'white',
+                          px: 3,
+                          py: 1.5,
+                          borderRadius: 2
+                        }}
+                      >
+                        Print Report
+                      </Button>
+                    </motion.div>
+                  </Box>
                 </Grid>
               </Grid>
+            </Paper>
+          </motion.div>
+
+          {/* Financial Overview Section */}
+          <Grid container spacing={4} sx={{ mt: 4 }}>
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    height: '100%',
+                    background: theme => `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 3
+                  }}>
+                    <MonetizationOnIcon /> Financial Overview
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Purchase Price"
+                        value={purchasePrice}
+                        onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}
+                        fullWidth
+                        type="number"
+                        InputProps={{
+                          startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2
+                          }
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Total Maintenance Cost"
+                        value={`$${totalMaintenanceCost.toFixed(2)}`}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            backgroundColor: alpha('#000', 0.02)
+                          }
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Sale Price"
+                        value={salePrice}
+                        onChange={(e) => setSalePrice(parseFloat(e.target.value) || 0)}
+                        fullWidth
+                        type="number"
+                        InputProps={{
+                          startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2
+                          }
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Box sx={{
+                        height: '2px',
+                        background: 'linear-gradient(90deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 100%)',
+                        my: 2
+                      }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Total Cost"
+                        value={`$${(purchasePrice + totalMaintenanceCost).toFixed(2)}`}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            backgroundColor: alpha('#000', 0.02)
+                          }
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Gross Profit"
+                        value={`$${(salePrice - (purchasePrice + totalMaintenanceCost)).toFixed(2)}`}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            backgroundColor: alpha('#000', 0.02)
+                          }
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </motion.div>
+            </Grid>
+
+            {/* Chart Section */}
+            <Grid item xs={12} md={6}>
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    height: '100%',
+                    background: theme => `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 3
+                  }}>
+                    <TimelineIcon /> Cost Breakdown
+                  </Typography>
+                  <Box sx={{ 
+                    height: 400, 
+                    width: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}>
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.3 }}
+                      style={{ width: '100%', height: '100%' }}
+                    >
+                      <Pie data={pieData} options={pieOptions} />
+                    </motion.div>
+                    {totalMaintenanceCost > 0 && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            color: theme => theme.palette.text.secondary,
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          Total
+                        </Typography>
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          ${totalMaintenanceCost.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              </motion.div>
             </Grid>
           </Grid>
+
+          {/* Maintenance Records Section */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 4,
+                p: 3,
+                borderRadius: 3,
+                background: theme => `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6" sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}>
+                  <ReceiptLongIcon /> Maintenance Records
+                </Typography>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddExpenseReport}
+                    sx={{
+                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                      color: 'white',
+                      borderRadius: 2
+                    }}
+                  >
+                    Add Record
+                  </Button>
+                </motion.div>
+              </Box>
+
+              <TableContainer>
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      {['Date', 'Category', 'Vendor', 'Description', 'Receipt', 'Cost', 'Actions'].map((header) => (
+                        <TableCell 
+                          key={header} 
+                          sx={{ 
+                            fontWeight: 'bold',
+                            backgroundColor: theme => alpha(theme.palette.primary.main, 0.1),
+                            borderBottom: '2px solid',
+                            borderBottomColor: 'primary.main'
+                          }}
+                        >
+                          {header}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <AnimatePresence>
+                      {records.map((record, index) => (
+                        <motion.tr
+                          key={record._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          style={{ backgroundColor: index % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'white' }}
+                        >
+                          <TableCell>{record.date_occurred}</TableCell>
+                          <TableCell>{record.category}</TableCell>
+                          <TableCell>{record.service_provider}</TableCell>
+                          <TableCell>{record.notes}</TableCell>
+                          <TableCell></TableCell>
+                          <TableCell>${record.cost}</TableCell>
+                          <TableCell>
+                            <Box display="flex" gap={1}>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  onClick={() => handleEditRecord(record._id)}
+                                  sx={{
+                                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                                    color: 'white'
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+                              </motion.div>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  variant="contained"
+                                  size="small"
+                                  onClick={() => handleDeleteRecord(record._id)}
+                                  sx={{
+                                    background: 'linear-gradient(45deg, #f44336 30%, #ff9800 90%)',
+                                    color: 'white'
+                                  }}
+                                >
+                                  Delete
+                                </Button>
+                              </motion.div>
+                            </Box>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                    <TableRow>
+                      <TableCell colSpan={5} sx={{ fontWeight: 'bold', textAlign: 'right' }}>
+                        Total
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>${totalMaintenanceCost.toFixed(2)}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </motion.div>
         </Box>
-
-        {error && <Typography color="error">{error}</Typography>}
-
-        <Typography variant="h5" gutterBottom sx={{ textAlign: 'left', mt: 4 }}>
-  Reconditioning Cost Records
-</Typography>
-
-
-        <TableContainer component={Paper} sx={{ marginTop: 4 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                {['Date', 'Category', 'Vendor', 'Description', 'Receipt', 'Cost', 'Actions'].map((header) => (
-                  <TableCell key={header} sx={{ fontWeight: 'bold', borderRight: '1px solid #d0d0d0' }}>
-                    {header}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {records.map((record) => (
-                <TableRow key={record._id} hover sx={{ backgroundColor: 'white' }}>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.date_occurred}</TableCell>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.category}</TableCell>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.service_provider}</TableCell>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>{record.notes}</TableCell>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}></TableCell>
-                  <TableCell sx={{ borderRight: '1px solid #d0d0d0' }}>${record.cost}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="small"
-                      onClick={() => handleEditRecord(record._id)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      size="small"
-                      onClick={() => handleDeleteRecord(record._id)}
-                      sx={{ ml: 1 }}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow>
-                <TableCell colSpan={5} sx={{ fontWeight: 'bold', textAlign: 'right' }}>
-                  Total
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>${totalMaintenanceCost.toFixed(2)}</TableCell>
-                <TableCell></TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-    </Container>
+      </Container>
+    </motion.div>
   );
 }
 
