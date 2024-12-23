@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify, render_template
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -562,5 +563,7 @@ def get_company_name(username):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    host = os.getenv("FLASK_HOST", "127.0.0.1")  # Default to localhost for development
+    port = int(os.getenv("FLASK_PORT", 5000))    # Default to port 5000
+    app.run(debug=True, host=host, port=port)
