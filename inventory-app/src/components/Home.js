@@ -127,105 +127,41 @@ function Home() {
         enabled: true,
         backgroundColor: 'rgba(17, 24, 39, 0.95)',
         padding: {
-          top: 12,
-          right: 16,
-          bottom: 12,
-          left: 16
+          top: 8,
+          right: 12,
+          bottom: 8,
+          left: 12
         },
         titleFont: {
-          size: 14,
+          size: 12,
           weight: 'bold',
           family: "'Inter', sans-serif"
         },
         bodyFont: {
-          size: 13,
+          size: 11,
           family: "'Inter', sans-serif"
         },
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderWidth: 1,
-        displayColors: true,
-        boxWidth: 8,
-        boxHeight: 8,
-        boxPadding: 4,
         callbacks: {
           label: function(tooltipItem) {
             const total = tooltipItem.dataset.data.reduce((sum, value) => sum + value, 0);
             const value = tooltipItem.raw;
             const percent = ((value / total) * 100).toFixed(1);
-            return ` ${tooltipItem.label}: ${value} vehicles (${percent}%)`;
+            return ` ${value} (${percent}%)`;
           }
         }
       },
       legend: {
+        display: true,
         position: 'bottom',
         labels: {
-          padding: 24,
+          padding: 15,
           font: {
-            size: 13,
-            family: "'Inter', sans-serif",
-            weight: '500'
-          },
-          usePointStyle: true,
-          pointStyle: 'circle',
-          generateLabels: function(chart) {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              const total = data.datasets[0].data.reduce((sum, value) => sum + value, 0);
-              return data.labels.map((label, i) => {
-                const value = data.datasets[0].data[i];
-                const percent = ((value / total) * 100).toFixed(1);
-                return {
-                  text: `${label} - ${value} (${percent}%)`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  hidden: isNaN(data.datasets[0].data[i]),
-                  lineCap: 'round',
-                  lineDash: [],
-                  lineDashOffset: 0,
-                  lineJoin: 'round',
-                  lineWidth: 1,
-                  strokeStyle: data.datasets[0].backgroundColor[i],
-                  pointStyle: 'circle',
-                  index: i
-                };
-              });
-            }
-            return [];
+            size: 11
           }
         }
-      },
-      datalabels: {
-        color: '#ffffff',
-        font: {
-          weight: '600',
-          size: 13,
-          family: "'Inter', sans-serif"
-        },
-        formatter: (value, ctx) => {
-          const total = ctx.dataset.data.reduce((sum, val) => sum + val, 0);
-          const percentage = ((value / total) * 100).toFixed(1);
-          return percentage > 5 ? `${percentage}%` : '';
-        },
-        anchor: 'center',
-        align: 'center',
-        offset: 0,
-        padding: 0,
-        textShadow: '0px 1px 2px rgba(0, 0, 0, 0.3)'
       }
     },
-    elements: {
-      arc: {
-        borderWidth: 2,
-        borderColor: '#ffffff',
-        borderRadius: 4
-      }
-    },
-    cutout: '75%',
-    animation: {
-      animateScale: true,
-      animateRotate: true,
-      duration: 1000,
-      easing: 'easeOutCirc'
-    }
+    cutout: '70%'
   };
 
   const containerVariants = {
@@ -395,7 +331,7 @@ function Home() {
       initial="hidden"
       animate="visible"
     >
-      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 0.5, sm: 2 }, mb: { xs: 2, sm: 3 } }}>
         <Box mt={3} textAlign="center">
           <motion.div variants={itemVariants}>
             <Typography 
@@ -403,50 +339,56 @@ function Home() {
               gutterBottom 
               sx={{ 
                 fontWeight: 800,
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
                 background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                mb: 2
+                mb: { xs: 2, sm: 3 }
               }}
             >
               Welcome to Your Dashboard
             </Typography>
           </motion.div>
 
-          <Box mb={3} display="flex" justifyContent="center" gap={1}>
+          <Box 
+            mb={{ xs: 2, sm: 3 }} 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }} 
+            gap={{ xs: 1, sm: 1.5 }}
+            px={{ xs: 1, sm: 0 }}
+          >
             {[
               { text: 'View Inventory', icon: <InventoryIcon />, handler: handleViewInventory, color: '#36A2EB' },
               { text: 'Add New Car', icon: <AddIcon />, handler: handleAddCar, color: '#FF6384' },
               { text: 'Add Expense Report', icon: <ReceiptIcon />, handler: handleAddExpenseReport, color: '#FFCE56' }
             ].map((btn, index) => (
-              <motion.div key={index} variants={itemVariants}>
-                <motion.div variants={buttonHoverVariants} whileHover="hover">
-                  <Button
-                    variant="contained"
-                    onClick={btn.handler}
-                    startIcon={btn.icon}
-                    sx={{
-                      background: `linear-gradient(45deg, ${btn.color} 30%, ${btn.color}99 90%)`,
-                      color: 'white',
-                      fontWeight: 'bold',
-                      padding: '12px 24px',
-                      borderRadius: '12px',
-                      textTransform: 'none',
-                      fontSize: '1rem',
-                      width: { xs: '100%', sm: 'auto' },
-                      '&:hover': {
-                        background: `linear-gradient(45deg, ${btn.color} 30%, ${btn.color} 90%)`,
-                      },
-                    }}
-                  >
-                    {btn.text}
-                  </Button>
-                </motion.div>
+              <motion.div key={index} variants={itemVariants} style={{ width: '100%' }}>
+                <Button
+                  variant="contained"
+                  onClick={btn.handler}
+                  startIcon={btn.icon}
+                  fullWidth
+                  sx={{
+                    background: `linear-gradient(45deg, ${btn.color} 30%, ${btn.color}99 90%)`,
+                    color: 'white',
+                    fontWeight: 'bold',
+                    padding: { xs: '6px 12px', sm: '8px 16px', md: '12px 24px' },
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
+                    minHeight: { xs: '40px', sm: '48px' },
+                    '&:hover': {
+                      background: `linear-gradient(45deg, ${btn.color} 30%, ${btn.color} 90%)`,
+                    },
+                  }}
+                >
+                  {btn.text}
+                </Button>
               </motion.div>
             ))}
           </Box>
 
-          <Grid container spacing={2}>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ px: { xs: 0.5, sm: 2 } }}>
             {[
               {
                 title: 'Active Inventory',
@@ -497,13 +439,13 @@ function Home() {
                 icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
               }
             ].map((item, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
+              <Grid item xs={6} sm={6} md={3} key={index}>
                 <motion.div variants={itemVariants}>
                   <Paper
                     elevation={0}
                     sx={{
-                      padding: { xs: 2, sm: 2 },
-                      borderRadius: 3,
+                      padding: { xs: 1, sm: 1.5, md: 2 },
+                      borderRadius: 2,
                       background: theme.palette.mode === 'dark' 
                         ? `linear-gradient(45deg, ${theme.palette.background.paper} 0%, ${item.color}22 100%)`
                         : `linear-gradient(45deg, #fff 0%, ${item.color}22 100%)`,
@@ -511,30 +453,33 @@ function Home() {
                       transition: 'transform 0.3s ease-in-out',
                       '&:hover': {
                         transform: 'translateY(-3px)',
-                      }
+                      },
+                      minHeight: { xs: '90px', sm: '120px' }
                     }}
                   >
-                    <Box display="flex" alignItems="center" mb={1}>
+                    <Box display="flex" alignItems="center" mb={0.5}>
                       <Box sx={{ color: item.color }}>
-                        {React.cloneElement(item.icon, { sx: { fontSize: 30 } })}
+                        {React.cloneElement(item.icon, { sx: { fontSize: { xs: 20, sm: 24, md: 30 } } })}
                       </Box>
                     </Box>
                     <Typography 
-                      variant="subtitle1" 
+                      variant="subtitle2" 
                       color="text.secondary"
                       sx={{ 
-                        fontSize: { xs: '0.8rem', sm: '0.9rem' },
-                        mb: 0.5
+                        fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.9rem' },
+                        mb: 0.5,
+                        lineHeight: 1.2
                       }}
                     >
                       {item.title}
                     </Typography>
                     <Typography 
-                      variant="h5" 
+                      variant="h6" 
                       sx={{ 
-                        fontWeight: 800,
+                        fontWeight: 700,
                         color: item.color,
-                        fontSize: { xs: '1.2rem', sm: '1.4rem' }
+                        fontSize: { xs: '0.85rem', sm: '1rem', md: '1.4rem' },
+                        lineHeight: 1.2
                       }}
                     >
                       {item.value}
@@ -549,9 +494,10 @@ function Home() {
                 <Paper
                   elevation={0}
                   sx={{
-                    padding: { xs: 2, sm: 2 },
-                    borderRadius: 3,
-                    height: { xs: '250px', sm: '300px' }
+                    padding: { xs: 1, sm: 1.5, md: 2 },
+                    borderRadius: 2,
+                    height: { xs: '250px', sm: '300px', md: '350px' },
+                    mb: { xs: 1.5, sm: 2 }
                   }}
                 >
                   <Typography 
@@ -559,73 +505,17 @@ function Home() {
                     gutterBottom 
                     color="text.secondary"
                     sx={{ 
-                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                      mb: 3
+                      fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
+                      mb: { xs: 1, sm: 2 }
                     }}
                   >
                     Inventory Distribution
                   </Typography>
                   <Box sx={{ 
-                    width: '100%', 
-                    height: { xs: '280px', sm: '320px' },
-                    margin: '0 auto',
-                    maxWidth: '500px',
-                    position: 'relative',
-                    p: 2
+                    height: { xs: '200px', sm: '250px', md: '300px' },
+                    width: '100%' 
                   }}>
-                    <motion.div
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
-                      style={{ width: '100%', height: '100%' }}
-                    >
-                      <Pie data={pieData} options={pieOptions} />
-                    </motion.div>
-                    {(dashboardData?.total_vehicles > 0) && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          textAlign: 'center',
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          backdropFilter: 'blur(8px)',
-                          borderRadius: '50%',
-                          width: '120px',
-                          height: '120px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          border: '2px solid rgba(255, 255, 255, 0.1)'
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: theme => theme.palette.text.secondary,
-                            fontWeight: '500',
-                            fontSize: '0.875rem',
-                            mb: 0.5
-                          }}
-                        >
-                          Total
-                        </Typography>
-                        <Typography
-                          variant="h4"
-                          sx={{
-                            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            fontWeight: '700',
-                            fontSize: '2rem'
-                          }}
-                        >
-                          {dashboardData?.total_vehicles || 0}
-                        </Typography>
-                      </Box>
-                    )}
+                    <Pie data={pieData} options={pieOptions} />
                   </Box>
                 </Paper>
               </motion.div>

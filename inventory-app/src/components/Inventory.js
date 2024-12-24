@@ -439,7 +439,14 @@ function Inventory() {
           </Typography>
         </motion.div>
       )}
-      <Container maxWidth="lg">
+      <Container 
+        maxWidth={false} 
+        sx={{ 
+          px: { xs: 2, sm: 3 }, 
+          mb: { xs: 2, sm: 3 },
+          maxWidth: '95vw'
+        }}
+      >
         <Box mt={5}>
           <Typography
             variant="h4"
@@ -506,23 +513,27 @@ function Inventory() {
           <Box display="flex" gap={2} mb={3} sx={{
             flexDirection: { xs: 'column', md: 'row' },
             '& .MuiTextField-root': {
-              width: { xs: '100%', md: 'auto' }
+              width: '100%'
             }
           }}>
-            <TextField label="Filter by Make" value={filter.make} onChange={(e) => setFilter({ ...filter, make: e.target.value })} />
-            <TextField label="Filter by Model" value={filter.model} onChange={(e) => setFilter({ ...filter, model: e.target.value })} />
-            <TextField
-              label="Min Sale Price"
-              type="number"
-              value={filter.minPrice}
-              onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
-            />
-            <TextField
-              label="Max Sale Price"
-              type="number"
-              value={filter.maxPrice}
-              onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
-            />
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
+              <TextField label="Filter by Make" value={filter.make} onChange={(e) => setFilter({ ...filter, make: e.target.value })} />
+              <TextField label="Filter by Model" value={filter.model} onChange={(e) => setFilter({ ...filter, model: e.target.value })} />
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
+              <TextField
+                label="Min Sale Price"
+                type="number"
+                value={filter.minPrice}
+                onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
+              />
+              <TextField
+                label="Max Sale Price"
+                type="number"
+                value={filter.maxPrice}
+                onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
+              />
+            </Box>
             <TextField label="Search Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           </Box>
 
@@ -549,30 +560,25 @@ function Inventory() {
             </Button>
           </Box>
 
-          <Box display="flex" justifyContent="space-between" mb={2} sx={{
-            flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: 0 }
-          }}>
-            <Box>
-              <IconButton onClick={() => scrollHorizontally('left')}>
-                <ArrowBackIosIcon />
-              </IconButton>
-              <IconButton onClick={() => scrollHorizontally('right')}>
-                <ArrowForwardIosIcon />
-              </IconButton>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box display="flex" gap={2}>
+              {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                VIN
+                <IconButton size="small" onClick={() => handleSort('vin')}>
+                  {sortKey === 'vin' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
+                </IconButton>
+              </Box> */}
+              {/* <Box sx={{ color: 'primary.main' }}>
+                ASCENDING
+              </Box> */}
             </Box>
-            <Box>
-              <IconButton onClick={() => scrollVertically('up')}>
-                <ArrowUpwardIcon />
-              </IconButton>
-              <IconButton onClick={() => scrollVertically('down')}>
-                <ArrowDownwardIcon />
-              </IconButton>
-            </Box>
-          </Box>
 
-          <Box mt={3}>
-            <Box display="flex" justifyContent="flex-end" gap={2} mb={2}>
+            <Box display="flex" gap={2} sx={{
+              '& .MuiButton-root': {
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                py: { xs: 1, sm: 1.5 }
+              }
+            }}>
               <Button
                 variant="contained"
                 onClick={exportToExcel}
@@ -616,11 +622,45 @@ function Inventory() {
                 Print to PDF
               </Button>
             </Box>
+          </Box>
 
+          <Box display="flex" justifyContent="space-between" mb={2}>
+            <Box>
+              <IconButton onClick={() => scrollHorizontally('left')}>
+                <ArrowBackIosIcon />
+              </IconButton>
+              <IconButton onClick={() => scrollHorizontally('right')}>
+                <ArrowForwardIosIcon />
+              </IconButton>
+            </Box>
+            <Box>
+              <IconButton onClick={() => scrollVertically('up')}>
+                <ArrowUpwardIcon />
+              </IconButton>
+              <IconButton onClick={() => scrollVertically('down')}>
+                <ArrowDownwardIcon />
+              </IconButton>
+            </Box>
+          </Box>
+
+          <Box mt={3}>
             <TableContainer 
               ref={tableContainerRef}
               component={Paper}
-              sx={{ maxHeight: 'calc(100vh - 300px)', position: 'relative' }}
+              sx={{ 
+                maxHeight: { xs: 'calc(100vh - 400px)', sm: 'calc(100vh - 300px)' },
+                position: 'relative',
+                width: '100%',
+                '& .MuiTable-root': {
+                  minWidth: '100%',
+                  width: '100%'
+                },
+                '& .MuiTableCell-root': {
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }
+              }}
             >
               <Table stickyHeader>
                 <TableHead>
@@ -663,9 +703,6 @@ function Inventory() {
                     <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         VIN
-                        <IconButton size="small" onClick={() => handleSort('vin')}>
-                          {sortKey === 'vin' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
                       </Box>
                     </TableCell>
                     <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
@@ -764,7 +801,9 @@ function Inventory() {
                           <Box display="flex" gap={1} justifyContent="center" sx={{
                             flexDirection: { xs: 'column', sm: 'row' },
                             '& .MuiButton-root': {
-                              width: { xs: '100%', sm: 'auto' }
+                              minWidth: { xs: '100px', sm: 'auto' },
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              py: { xs: 0.5, sm: 1 }
                             }
                           }}>
                             <Button 
@@ -825,13 +864,17 @@ function Inventory() {
           <Modal open={open} onClose={handleClose}>
             <Box
               sx={{
-                width: { xs: '90%', sm: '600px' },
-                margin: 'auto',
-                mt: 5,
-                p: 3,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: { xs: '95%', sm: '600px' },
+                maxHeight: { xs: '90vh', sm: '80vh' },
+                overflow: 'auto',
                 bgcolor: 'background.paper',
                 borderRadius: '10px',
                 boxShadow: 24,
+                p: { xs: 2, sm: 3 }
               }}
             >
               {selectedVin && <EditCar vin={selectedVin} open={open} onClose={handleClose} />}

@@ -258,10 +258,10 @@ function AddCar() {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel id="sale-type-label">Sale Type</InputLabel>
+                    <InputLabel id="sale-type-label">Purchase Fund Source</InputLabel>
                     <Select
                       labelId="sale-type-label"
-                      label="Sale Type"
+                      label="Purchase Fund Source"
                       name="sale_type"
                       value={formData.sale_type}
                       onChange={handleChange}
