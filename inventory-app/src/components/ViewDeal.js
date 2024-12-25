@@ -41,6 +41,10 @@ function ViewDeal() {
   const [salePrice, setSalePrice] = useState(0);
   const [yearMakeModel, setYearMakeModel] = useState({ year: '', make: '', model: '' });
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [mileage, setMileage] = useState(0);
+  const [color, setColor] = useState('');
+  const [purchase_date, setPurchaseDate] = useState('');
+  const [sale_type, setSaleType] = useState('');
 
   const handlePrint = () => {
     setTimeout(() => {
@@ -89,6 +93,22 @@ function ViewDeal() {
               .header p {
                 margin: 5px 0;
                 color: #666;
+              }
+              .vehicle-details {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 15px;
+                margin-bottom: 20px;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+              }
+              .vehicle-details p {
+                margin: 5px 0;
+              }
+              .vehicle-details strong {
+                color: #444;
               }
               .divider {
                 border-bottom: 2px solid #2196F3;
@@ -165,6 +185,14 @@ function ViewDeal() {
               <h2>${yearMakeModel.year} ${yearMakeModel.make} ${yearMakeModel.model}</h2>
               <p>VIN: ${vin}</p>
             </div>
+            
+            <div class="vehicle-details">
+              <p><strong>Mileage:</strong> ${mileage.toLocaleString()} miles</p>
+              <p><strong>Color:</strong> ${color}</p>
+              <p><strong>Purchase Date:</strong> ${purchase_date}</p>
+              <p><strong>Purchase Type:</strong> ${sale_type.charAt(0).toUpperCase() + sale_type.slice(1)}</p>
+            </div>
+
             <div class="divider"></div>
             
             <div class="content-grid">
@@ -250,6 +278,10 @@ function ViewDeal() {
           setPurchasePrice(data.purchase_price || 0);
           setSalePrice(data.sale_price || 0);
           setYearMakeModel({ year: data.year, make: data.make, model: data.model });
+          setMileage(data.mileage || 0);
+          setColor(data.color || '');
+          setPurchaseDate(data.purchase_date || '');
+          setSaleType(data.sale_type || '');
         } else {
           setError(data.error || 'Error fetching car details');
         }
@@ -330,148 +362,65 @@ function ViewDeal() {
 
   const pieData = {
     labels: categories,
-    datasets: [
-      {
-        data: maintenanceCostsByCategory,
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.8)',   // Blue
-          'rgba(255, 99, 132, 0.8)',   // Pink
-          'rgba(255, 206, 86, 0.8)',   // Yellow
-          'rgba(75, 192, 192, 0.8)',   // Teal
-          'rgba(153, 102, 255, 0.8)',  // Purple
-          'rgba(255, 159, 64, 0.8)',   // Orange
-          'rgba(46, 204, 113, 0.8)',   // Green
-          'rgba(142, 68, 173, 0.8)',   // Dark Purple
-          'rgba(241, 196, 15, 0.8)',   // Yellow
-          'rgba(231, 76, 60, 0.8)'     // Red
-        ],
-        hoverBackgroundColor: [
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 99, 132, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)',
-          'rgba(46, 204, 113, 1)',
-          'rgba(142, 68, 173, 1)',
-          'rgba(241, 196, 15, 1)',
-          'rgba(231, 76, 60, 1)'
-        ],
-        borderWidth: 2,
-        borderColor: '#ffffff'
-      }
-    ]
+    datasets: [{
+      data: maintenanceCostsByCategory,
+      backgroundColor: [
+        '#4361ee', // Primary blue
+        '#3a0ca3', // Deep purple
+        '#7209b7', // Purple
+        '#f72585', // Pink
+        '#4cc9f0'  // Light blue
+      ],
+      borderWidth: 0
+    }]
   };
 
   const pieOptions = {
     plugins: {
       tooltip: {
         enabled: true,
-        borderWidth: 1,
+        backgroundColor: '#fff',
+        titleColor: '#333',
+        bodyColor: '#333',
+        titleFont: { size: 13 },
+        bodyFont: { size: 13 },
+        padding: 12,
+        displayColors: true,
         callbacks: {
           label: function(tooltipItem) {
-            const total = maintenanceCostsByCategory.reduce((sum, value) => sum + value, 0);
             const value = tooltipItem.raw;
-            const percent = ((value / total) * 100).toFixed(1);
-            return `$${value.toFixed(2)} (${percent}%)`;
-          },
-          title: function(tooltipItems) {
-            return tooltipItems[0].label;
+            return ` $${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
           }
         }
       },
       legend: {
         position: 'bottom',
         labels: {
-          padding: 20,
-          font: {
-            size: 13
-          },
-          generateLabels: function(chart) {
-            const data = chart.data;
-            if (data.labels.length && data.datasets.length) {
-              const total = data.datasets[0].data.reduce((sum, value) => sum + value, 0);
-              return data.labels.map((label, i) => {
-                const value = data.datasets[0].data[i];
-                const percent = ((value / total) * 100).toFixed(1);
-                return {
-                  text: `${label} - $${value.toFixed(2)} (${percent}%)`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  hidden: isNaN(data.datasets[0].data[i]),
-                  lineCap: 'round',
-                  lineDash: [],
-                  lineDashOffset: 0,
-                  lineJoin: 'round',
-                  lineWidth: 1,
-                  strokeStyle: '#fff',
-                  pointStyle: 'circle',
-                  index: i
-                };
-              });
-            }
-            return [];
-          }
+          padding: 15,
+          usePointStyle: true,
+          font: { size: 12 }
         }
       },
       datalabels: {
-        color: '#fff',
-        font: {
-          weight: 'bold',
-          size: 11
+        display: function(context) {
+          const value = context.dataset.data[context.dataIndex];
+          const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+          const percentage = (value / total) * 100;
+          return percentage > 5; // Only show labels for segments > 5%
         },
+        color: '#fff',
+        font: { weight: 'bold', size: 14 },
         formatter: (value, ctx) => {
           const total = ctx.dataset.data.reduce((sum, val) => sum + val, 0);
           const percentage = ((value / total) * 100).toFixed(1);
-          return percentage > 5 ? `${percentage}%` : ''; // Only show label if segment is > 5%
-        },
-        anchor: 'center',
-        align: 'center',
-        offset: 0,
-        padding: 0
+          return `${percentage}%`;
+        }
       }
-    },
-    elements: {
-      arc: {
-        borderWidth: 2,
-        borderColor: '#fff'
-      }
-    },
-    cutout: '65%', // Slightly larger hole for better text visibility
-    animation: {
-      animateScale: true,
-      animateRotate: true
     },
     layout: {
       padding: 20
     },
-    plugins: [{
-      id: 'centerText',
-      beforeDraw: function(chart) {
-        const width = chart.width;
-        const height = chart.height;
-        const ctx = chart.ctx;
-        ctx.restore();
-
-        // Calculate total
-        const total = chart.data.datasets[0].data.reduce((sum, value) => sum + value, 0);
-        
-        // Font settings
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-
-        // Draw "Total" text
-        ctx.font = '14px Arial';
-        ctx.fillStyle = '#666';
-        ctx.fillText('Total', width / 2, (height / 2) - 15);
-
-        // Draw total amount
-        ctx.font = 'bold 16px Arial';
-        ctx.fillStyle = '#333';
-        ctx.fillText(`$${total.toFixed(2)}`, width / 2, (height / 2) + 15);
-
-        ctx.save();
-      }
-    }]
+    cutout: '65%'
   };
 
   return (
@@ -498,7 +447,7 @@ function ViewDeal() {
                 border: '1px solid rgba(255, 255, 255, 0.1)',
               }}
             >
-              <Grid container spacing={3} alignItems="center">
+              <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
                   <Typography variant="h4" gutterBottom sx={{ 
                     fontWeight: 700,
@@ -508,9 +457,27 @@ function ViewDeal() {
                   }}>
                     {`${yearMakeModel.year} ${yearMakeModel.make.toUpperCase()} ${yearMakeModel.model.toUpperCase()}`}
                   </Typography>
-                  <Typography variant="h6" color="textSecondary">
+                  <Typography variant="h6" color="textSecondary" gutterBottom>
                     VIN: {vin}
                   </Typography>
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1" color="textSecondary">
+                        <strong>Mileage:</strong> {mileage.toLocaleString()} miles
+                      </Typography>
+                      <Typography variant="body1" color="textSecondary">
+                        <strong>Color:</strong> {color}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1" color="textSecondary">
+                        <strong>Purchase Date:</strong> {purchase_date}
+                      </Typography>
+                      <Typography variant="body1" color="textSecondary">
+                        <strong>Purchase Type:</strong> {sale_type.charAt(0).toUpperCase() + sale_type.slice(1)}
+                      </Typography>
+                    </Grid>
+                  </Grid>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Box display="flex" justifyContent="flex-end">
@@ -683,49 +650,12 @@ function ViewDeal() {
                     width: '100%',
                     position: 'relative',
                     display: 'flex',
-                    justifyContent: 'center',
+                    flexDirection: 'column',
                     alignItems: 'center'
                   }}>
-                    <motion.div
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.3 }}
-                      style={{ width: '100%', height: '100%' }}
-                    >
+                    <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
                       <Pie data={pieData} options={pieOptions} />
-                    </motion.div>
-                    {totalMaintenanceCost > 0 && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          textAlign: 'center'
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            color: theme => theme.palette.text.secondary,
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          Total
-                        </Typography>
-                        <Typography
-                          variant="h5"
-                          sx={{
-                            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          ${totalMaintenanceCost.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    )}
+                    </Box>
                   </Box>
                 </Paper>
               </motion.div>
