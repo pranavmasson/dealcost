@@ -271,7 +271,7 @@ function Home() {
 
     const distribution = priceRanges.map(range => {
       return inventory.filter(car => 
-        car.sale_price >= range.min && car.sale_price < range.max
+        parseFloat(car.purchase_price) >= range.min && parseFloat(car.purchase_price) < range.max
       ).length;
     });
 

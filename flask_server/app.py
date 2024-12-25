@@ -449,31 +449,50 @@ def update_report(report_id):
 def get_dashboard_data():
     try:
         username = request.args.get('username')
-        print(f"Received request for username: {username}")
-        
         if not username:
             return jsonify({"error": "Username is required"}), 400
 
-        # Debug: Check if we can find any inventory for this user's _id
-        inventory_count = inventory_collection.count_documents({"username": username})
-        print(f"Found {inventory_count} inventory items for user ID {username}")
-
-        # Get all inventory using the user's _id
-        all_inventory = list(inventory_collection.find({"username": username}))
-        print(f"Retrieved inventory: {all_inventory}")
+        # Get current month's start and end dates
+        today = datetime.now()
+        start_of_month = datetime(today.year, today.month, 1)
         
-        # Convert ObjectId to string for JSON serialization
+        # Get all inventory for the user
+        all_inventory = list(inventory_collection.find({"username": username}))
         for car in all_inventory:
             car['_id'] = str(car['_id'])
 
-        # Get all unsold inventory
+        # Get all maintenance reports
+        all_reports = list(reports_collection.find({"username": username}))
+        
+        # Calculate current month's reconditioning cost with proper date parsing
+        current_month_reconditioning = sum(
+            float(report.get('cost', 0))
+            for report in all_reports
+            if datetime.strptime(report.get('date_occurred', '01/01/1900'), '%m/%d/%Y') >= start_of_month
+        )
+
+        # Calculate current month's profit from sold vehicles with proper date parsing
+        current_month_profit = sum(
+            float(car.get('sale_price', 0)) - float(car.get('purchase_price', 0))
+            for car in all_inventory
+            if car.get('sale_status') == 'sold' 
+            and datetime.strptime(car.get('date_sold', '01/01/1900'), '%m/%d/%Y') >= start_of_month
+        )
+
+        # Get unsold inventory
         unsold_inventory = [car for car in all_inventory if car.get('sale_status') != 'sold']
-        print(f"Unsold inventory count: {len(unsold_inventory)}")
 
         # Calculate metrics
         total_vehicles = len(unsold_inventory)
         total_inventory_value = sum(float(car.get('purchase_price', 0)) for car in unsold_inventory)
         
+        # Calculate reconditioning cost for unsold inventory
+        unsold_reconditioning_cost = sum(
+            float(report.get('cost', 0))
+            for report in all_reports
+            if any(report.get('vin') == car.get('vin') for car in unsold_inventory)
+        )
+
         # Get counts by sale type
         total_floor_plan = sum(1 for car in unsold_inventory if car.get('sale_type') == 'floor')
         total_dealership = sum(1 for car in unsold_inventory if car.get('sale_type') == 'dealer')
@@ -483,15 +502,14 @@ def get_dashboard_data():
             "inventory": all_inventory,
             "total_vehicles": total_vehicles,
             "total_inventory_value": total_inventory_value,
-            "current_month_reconditioning_cost": 0,
-            "current_month_profit": 0,
+            "current_month_reconditioning_cost": current_month_reconditioning,
+            "current_month_profit": current_month_profit,
             "total_floor_plan": total_floor_plan,
             "total_dealership": total_dealership,
             "total_consignment": total_consignment,
-            "unsold_reconditioning_cost": 0,
+            "unsold_reconditioning_cost": unsold_reconditioning_cost,
         }
         
-        print(f"Sending response data: {response_data}")
         return jsonify(response_data), 200
 
     except Exception as e:

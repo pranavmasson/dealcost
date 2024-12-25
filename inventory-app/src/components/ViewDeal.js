@@ -364,21 +364,9 @@ function ViewDeal() {
   };
 
   const pieOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
     plugins: {
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleFont: {
-          size: 14,
-          weight: 'bold'
-        },
-        bodyFont: {
-          size: 13
-        },
-        borderColor: 'rgba(255, 255, 255, 0.1)',
         borderWidth: 1,
         callbacks: {
           label: function(tooltipItem) {
@@ -448,11 +436,42 @@ function ViewDeal() {
         borderColor: '#fff'
       }
     },
-    cutout: '60%', // Makes it a donut chart
+    cutout: '65%', // Slightly larger hole for better text visibility
     animation: {
       animateScale: true,
       animateRotate: true
-    }
+    },
+    layout: {
+      padding: 20
+    },
+    plugins: [{
+      id: 'centerText',
+      beforeDraw: function(chart) {
+        const width = chart.width;
+        const height = chart.height;
+        const ctx = chart.ctx;
+        ctx.restore();
+
+        // Calculate total
+        const total = chart.data.datasets[0].data.reduce((sum, value) => sum + value, 0);
+        
+        // Font settings
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+
+        // Draw "Total" text
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#666';
+        ctx.fillText('Total', width / 2, (height / 2) - 15);
+
+        // Draw total amount
+        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = '#333';
+        ctx.fillText(`$${total.toFixed(2)}`, width / 2, (height / 2) + 15);
+
+        ctx.save();
+      }
+    }]
   };
 
   return (
