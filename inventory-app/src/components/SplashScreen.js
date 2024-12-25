@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box, Button, Typography, Container, Grid, IconButton } from '@mui/material';
+import { Box, Button, Typography, Container, Grid, IconButton, Link } from '@mui/material';
 import { styled } from '@mui/system';
 import { motion, useScroll, useTransform, useAnimation } from 'framer-motion';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -14,6 +14,7 @@ import desktopScreenshot2 from '../assets/desktop-screenshot-2.png';
 import mobileScreenshot from '../assets/mobile-screenshot.png';
 import dealcostScreenshot from '../assets/dealcost_screenshot.png';
 import dashboardScreenshot from '../assets/dashboard-screenshot.png';
+import logo from '../assets/logo.png';
 
 const Section = styled(Box)(({ theme }) => ({
   width: '100%',
@@ -127,13 +128,12 @@ const StatsSection = styled(Section)({
   }
 });
 
-const Footer = styled(Box)({
-  backgroundColor: '#000',
-  padding: '2rem',
-  width: '100%',
+const Footer = styled('footer')({
+  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  padding: '40px 0',
+  color: 'white',
   position: 'relative',
-  zIndex: 2,
-  borderTop: '1px solid rgba(255, 255, 255, 0.1)'
+  zIndex: 1,
 });
 
 const styles = `
@@ -289,11 +289,12 @@ function SplashScreen() {
                   <Typography
                     variant="h1"
                     sx={{
-                      fontSize: { xs: '2.5rem', sm: '3rem', md: '5rem' },
-                      fontWeight: 900,
                       color: 'white',
-                      textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-                      textAlign: 'left'
+                      fontWeight: 'bold',
+                      fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                      letterSpacing: '4px',
+                      mb: 4,
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
                     }}
                   >
                     DEALCOST
@@ -662,7 +663,7 @@ function SplashScreen() {
                         height: 'auto',
                         borderRadius: '12px',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        transform: 'translateX(-15%)',
+                        transform: 'none',
                         '@media (max-width: 900px)': {
                           width: '100%',
                           transform: 'none',
@@ -830,7 +831,7 @@ function SplashScreen() {
                       src={dashboardScreenshot}
                       alt="Dashboard Screenshot"
                       sx={{
-                        width: '100%',
+                        width: '90%',
                         height: 'auto',
                         borderRadius: '12px',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -851,24 +852,98 @@ function SplashScreen() {
       </FullScreenWrapper>
       <Footer>
         <Container maxWidth="lg">
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.5)',
-                fontSize: '0.75rem',
-                letterSpacing: '0.5px'
-              }}
-            >
-              © 2024 DEALCOST LLC
-            </Typography>
-          </Box>
+          <Grid container spacing={4}>
+            {/* Features Column */}
+            <Grid item xs={12} sm={3}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'white' }}>
+                Features
+              </Typography>
+              {[
+                'Inventory Management',
+                'Cost Tracking',
+                'Performance Metrics',
+                'Deal Analysis',
+                'Maintenance Records',
+                'Real-time Analytics',
+                'Document Management',
+                'Profit Tracking'
+              ].map((item) => (
+                <Typography 
+                  key={item}
+                  variant="body2" 
+                  sx={{ 
+                    mb: 1,
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    '&:hover': { color: '#00f2fe', cursor: 'pointer' }
+                  }}
+                >
+                  {item}
+                </Typography>
+              ))}
+            </Grid>
+
+            {/* Links Column */}
+            <Grid item xs={12} sm={3}>
+              {['Pricing', 'FAQ', 'Schedule Demo', 'Get Started', 'Support', 'About Us', 'Contact', 'Documentation'].map((item) => (
+                <Typography 
+                  key={item}
+                  variant="body2" 
+                  sx={{ 
+                    mb: 1,
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    '&:hover': { color: '#00f2fe', cursor: 'pointer' }
+                  }}
+                >
+                  {item}
+                </Typography>
+              ))}
+            </Grid>
+
+            {/* Contact Column */}
+            <Grid item xs={12} sm={3}>
+              <Typography variant="h6" sx={{ mb: 2, color: 'white' }}>
+                CALL US TODAY
+              </Typography>
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  color: '#00f2fe',
+                  fontWeight: 'bold',
+                  mb: 2
+                }}
+              >
+                123.456.7890
+              </Typography>
+            </Grid>
+
+            {/* Logo Column */}
+            <Grid item xs={12} sm={3} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+              <Typography
+                variant="h2"
+                sx={{ 
+                  color: 'white',
+                  fontWeight: 'bold',
+                  mb: 2,
+                  fontSize: { xs: '2rem', sm: '2.5rem' },
+                  letterSpacing: '2px'
+                }}
+              >
+                DEALCOST
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
+                <Link href="/terms" sx={{ color: 'inherit', textDecoration: 'none', '&:hover': { color: '#00f2fe' } }}>
+                  Terms of Use
+                </Link>
+                {' | '}
+                <Link href="/privacy" sx={{ color: 'inherit', textDecoration: 'none', '&:hover': { color: '#00f2fe' } }}>
+                  Privacy Policy
+                </Link>
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                Copyright © 2024 DealCost LLC
+              </Typography>
+            </Grid>
+          </Grid>
         </Container>
       </Footer>
     </>
