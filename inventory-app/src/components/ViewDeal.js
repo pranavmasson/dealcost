@@ -14,6 +14,7 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Modal,
 } from '@mui/material';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -25,6 +26,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
 import AddIcon from '@mui/icons-material/Add';
+import EnterDetailsManually from './EnterDetailsManually';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 ChartJS.register(ChartDataLabels);
@@ -38,67 +40,203 @@ function ViewDeal() {
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
   const [yearMakeModel, setYearMakeModel] = useState({ year: '', make: '', model: '' });
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Maintenance Report</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { font-size: 24px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
-            th { background-color: #f0f0f0; }
-          </style>
-        </head>
-        <body>
-          <h1>Maintenance Report for VIN: ${vin}</h1>
-          <h2>${yearMakeModel.year} ${yearMakeModel.make} ${yearMakeModel.model}</h2>
-          
-          <h2>Cost Summary</h2>
-          <p><strong>Purchase Price:</strong> $${purchasePrice.toFixed(2)}</p>
-          <p><strong>Total Maintenance Cost:</strong> $${totalMaintenanceCost.toFixed(2)}</p>
-          <p><strong>Total Cost (Purchase + Maintenance):</strong> $${(purchasePrice + totalMaintenanceCost).toFixed(2)}</p>
-          <p><strong>Sale Price:</strong> $${salePrice.toFixed(2)}</p>
-          <p><strong>Difference (Sale Price - Total Cost):</strong> $${(salePrice - (purchasePrice + totalMaintenanceCost)).toFixed(2)}</p>
-          
-          <h2>Maintenance Records</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Cost</th>
-                <th>Category</th>
-                <th>Vendor</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${records.map(record => `
+    setTimeout(() => {
+      const chartCanvas = document.querySelector('canvas.chartjs-render-monitor') || 
+                         document.querySelector('canvas') ||
+                         document.querySelector('.Pie canvas');
+      
+      let chartImage = null;
+      
+      if (chartCanvas) {
+        try {
+          chartImage = chartCanvas.toDataURL('image/png');
+        } catch (error) {
+          console.error('Error capturing chart:', error);
+        }
+      }
+
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Maintenance Report</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 40px 50px;
+                color: #333;
+                line-height: 1.4;
+              }
+              .header { 
+                text-align: center;
+                margin-bottom: 20px;
+              }
+              .header h1 { 
+                font-size: 24px; 
+                color: #2196F3;
+                margin: 0;
+                padding-bottom: 5px;
+              }
+              .header h2 { 
+                font-size: 18px;
+                margin: 5px 0;
+                color: #555;
+                text-transform: capitalize;
+              }
+              .header p {
+                margin: 5px 0;
+                color: #666;
+              }
+              .divider {
+                border-bottom: 2px solid #2196F3;
+                margin: 10px 0;
+              }
+              .content-grid {
+                display: grid;
+                grid-template-columns: 60% 40%;
+                gap: 20px;
+                margin-bottom: 20px;
+              }
+              .summary-box {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 15px;
+              }
+              .summary-box h3 {
+                font-size: 16px;
+                margin: 0 0 10px 0;
+                color: #444;
+              }
+              .summary-item {
+                display: flex;
+                justify-content: space-between;
+                margin: 5px 0;
+                font-size: 13px;
+              }
+              .chart-container {
+                text-align: center;
+              }
+              .chart-container h3 {
+                font-size: 16px;
+                margin: 0 0 10px 0;
+                color: #444;
+              }
+              .chart-image {
+                width: 200px;
+                height: auto;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 20px;
+                font-size: 12px;
+              }
+              th { 
+                background-color: #f0f0f0;
+                color: #333;
+                font-weight: bold;
+                text-align: left;
+                padding: 8px;
+                border: 1px solid #ddd;
+              }
+              td { 
+                padding: 8px;
+                border: 1px solid #ddd;
+              }
+              tr:nth-child(even) { 
+                background-color: #f9f9f9;
+              }
+              .total-row {
+                font-weight: bold;
+                background-color: #f0f0f0 !important;
+              }
+              @page {
+                margin: 0.5cm;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Vehicle Maintenance Report</h1>
+              <h2>${yearMakeModel.year} ${yearMakeModel.make} ${yearMakeModel.model}</h2>
+              <p>VIN: ${vin}</p>
+            </div>
+            <div class="divider"></div>
+            
+            <div class="content-grid">
+              <div class="summary-box">
+                <h3>Financial Summary</h3>
+                <div class="summary-item">
+                  <span>Purchase Price:</span>
+                  <span>$${purchasePrice.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                  <span>Total Maintenance Cost:</span>
+                  <span>$${totalMaintenanceCost.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                  <span>Total Investment:</span>
+                  <span>$${(purchasePrice + totalMaintenanceCost).toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                  <span>Sale Price:</span>
+                  <span>$${salePrice.toFixed(2)}</span>
+                </div>
+                <div class="summary-item" style="margin-top: 10px; font-weight: bold;">
+                  <span>Gross Profit:</span>
+                  <span>$${(salePrice - (purchasePrice + totalMaintenanceCost)).toFixed(2)}</span>
+                </div>
+              </div>
+
+              ${chartImage ? `
+                <div class="chart-container">
+                  <h3>Cost Breakdown</h3>
+                  <img src="${chartImage}" class="chart-image" alt="Cost Breakdown Chart"/>
+                </div>
+              ` : ''}
+            </div>
+            
+            <table>
+              <thead>
                 <tr>
-                  <td>${record.date_occurred}</td>
-                  <td>$${record.cost}</td>
-                  <td>${record.category}</td>
-                  <td>${record.vendor}</td>
-                  <td>${record.description || 'No description'}</td>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Vendor</th>
+                  <th>Description</th>
+                  <th>Cost</th>
                 </tr>
-              `).join('')}
-              <tr>
-                <td><strong>Total</strong></td>
-                <td><strong>$${totalMaintenanceCost.toFixed(2)}</strong></td>
-                <td colspan="3"></td>
-              </tr>
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+              </thead>
+              <tbody>
+                ${records.map(record => `
+                  <tr>
+                    <td>${record.date_occurred || 'N/A'}</td>
+                    <td>${record.category || 'N/A'}</td>
+                    <td>${record.service_provider || 'N/A'}</td>
+                    <td>${record.notes || 'N/A'}</td>
+                    <td>$${record.cost || '0.00'}</td>
+                  </tr>
+                `).join('')}
+                <tr class="total-row">
+                  <td colspan="4" style="text-align: right;">Total Maintenance Cost:</td>
+                  <td>$${totalMaintenanceCost.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.addEventListener('load', () => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      });
+    }, 500);
   };
   
 
@@ -180,7 +318,7 @@ function ViewDeal() {
   };
 
   const handleAddExpenseReport = () => {
-    navigate(`/add-expense-report/${vin}`);
+    setManualEntryOpen(true);
   };
 
   const categories = [...new Set(records.map((record) => record.category))];
@@ -620,7 +758,7 @@ function ViewDeal() {
                 <Table stickyHeader>
                   <TableHead>
                     <TableRow>
-                      {['Date', 'Category', 'Vendor', 'Description', 'Receipt', 'Cost', 'Actions'].map((header) => (
+                      {['Date', 'Category', 'Vendor', 'Description', 'Cost', 'Actions'].map((header) => (
                         <TableCell 
                           key={header} 
                           sx={{ 
@@ -650,7 +788,6 @@ function ViewDeal() {
                           <TableCell>{record.category}</TableCell>
                           <TableCell>{record.service_provider}</TableCell>
                           <TableCell>{record.notes}</TableCell>
-                          <TableCell></TableCell>
                           <TableCell>${record.cost}</TableCell>
                           <TableCell>
                             <Box display="flex" gap={1}>
@@ -686,7 +823,7 @@ function ViewDeal() {
                       ))}
                     </AnimatePresence>
                     <TableRow>
-                      <TableCell colSpan={5} sx={{ fontWeight: 'bold', textAlign: 'right' }}>
+                      <TableCell colSpan={4} sx={{ fontWeight: 'bold', textAlign: 'right' }}>
                         Total
                       </TableCell>
                       <TableCell sx={{ fontWeight: 'bold' }}>${totalMaintenanceCost.toFixed(2)}</TableCell>
@@ -698,6 +835,26 @@ function ViewDeal() {
             </Paper>
           </motion.div>
         </Box>
+
+        <Modal open={manualEntryOpen} onClose={() => setManualEntryOpen(false)}>
+            <Box
+                sx={{
+                    width: { xs: '90%', sm: '600px' },
+                    margin: 'auto',
+                    mt: 5,
+                    p: 3,
+                    bgcolor: 'white',
+                    borderRadius: '10px',
+                    boxShadow: 24,
+                }}
+            >
+                <EnterDetailsManually
+                    open={manualEntryOpen}
+                    onClose={() => setManualEntryOpen(false)}
+                    initialVin={vin}
+                />
+            </Box>
+        </Modal>
       </Container>
     </motion.div>
   );
