@@ -114,7 +114,7 @@ function App() {
                 width: open ? `calc(100% - 240px)` : '100%',
                 ml: open ? `240px` : 0,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: 'rgba(8, 11, 22, 0.85)',
+                background: 'rgba(13, 71, 161, 0.95)',
                 backdropFilter: 'blur(12px)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                 boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
@@ -190,7 +190,7 @@ function App() {
                 '& .MuiDrawer-paper': {
                   width: open ? 240 : 70,
                   boxSizing: 'border-box',
-                  background: 'rgba(8, 11, 22, 0.95)',
+                  background: 'rgba(13, 71, 161, 0.95)',
                   backdropFilter: 'blur(12px)',
                   borderRight: '1px solid rgba(255, 255, 255, 0.08)',
                   transition: 'width 0.3s ease',

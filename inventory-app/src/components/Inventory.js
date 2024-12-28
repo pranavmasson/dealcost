@@ -17,12 +17,16 @@ import {
   Select,
   MenuItem,
   IconButton,
+  Collapse,
+  alpha,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { motion } from 'framer-motion'; // Import framer-motion for animations
 import Modal from '@mui/material/Modal';
 import EditCar from './EditCar';
@@ -56,6 +60,8 @@ function Inventory() {
   const [manualEntryVin, setManualEntryVin] = useState(null);
 
   const [showAddSuccess, setShowAddSuccess] = useState(false);
+
+  const [isControlsExpanded, setIsControlsExpanded] = useState(false);
 
   const handleOpenManualEntry = (vin) => {
     setManualEntryVin(vin);
@@ -154,7 +160,18 @@ function Inventory() {
     }
   };
 
-  const formatPrice = (price) => `$${(parseFloat(price) || 0).toFixed(2)}`;
+  const formatPrice = (price) => {
+    if (price === null || price === undefined || isNaN(price)) {
+      return 'N/A';
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      notation: 'standard'
+    }).format(Number(price));
+  };
 
   const sortInventory = (a, b) => {
     if (sortKey === 'purchase_date') {
@@ -439,190 +456,196 @@ function Inventory() {
           </Typography>
         </motion.div>
       )}
-      <Container 
-        maxWidth={false} 
-        sx={{ 
-          px: { xs: 2, sm: 3 }, 
-          mb: { xs: 2, sm: 3 },
-          maxWidth: '95vw'
-        }}
-      >
-        <Box mt={5}>
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            textAlign="left"
-            fontWeight="bold"
-            sx={{ 
-              textTransform: 'uppercase', 
-              letterSpacing: 2,
-              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
-              mt: { xs: 2, md: 5 }
+      <Container maxWidth={false} sx={{ px: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 }, maxWidth: '95vw' }}>
+        <Box mt={3}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 2,
+              borderRadius: 2,
+              background: theme => `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`
             }}
           >
-            Your Inventory
-          </Typography>
-
-          <Box display="flex" gap={2} mb={3} sx={{
-            flexDirection: { xs: 'column', md: 'row' },
-            '& .MuiSelect-root, & .MuiTextField-root': {
-              width: { xs: '100%', md: 'auto' }
-            }
-          }}>
-            <Select
-              value={filterSold}
-              onChange={(e) => setFilterSold(e.target.value)}
-              displayEmpty
-              sx={{ minWidth: { xs: '100%', md: 150 } }}
+            <Box 
+              onClick={() => setIsControlsExpanded(!isControlsExpanded)}
+              sx={{ 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
             >
-              <MenuItem value="available">Show Available</MenuItem>
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="sold">Show Sold</MenuItem>
-            </Select>
-
-            <Select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              displayEmpty
-              sx={{ minWidth: { xs: '100%', md: 120 } }}
-            >
-              <MenuItem value="">All Months</MenuItem>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                <MenuItem key={month} value={month}>
-                  {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
-                </MenuItem>
-              ))}
-            </Select>
-
-            <Select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              displayEmpty
-              sx={{ minWidth: { xs: '100%', md: 120 } }}
-            >
-              <MenuItem value="">All Years</MenuItem>
-              {[2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021].reverse().map((year) => (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
-
-          <Box display="flex" gap={2} mb={3} sx={{
-            flexDirection: { xs: 'column', md: 'row' },
-            '& .MuiTextField-root': {
-              width: '100%'
-            }
-          }}>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
-              <TextField label="Filter by Make" value={filter.make} onChange={(e) => setFilter({ ...filter, make: e.target.value })} />
-              <TextField label="Filter by Model" value={filter.model} onChange={(e) => setFilter({ ...filter, model: e.target.value })} />
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
-              <TextField
-                label="Min Sale Price"
-                type="number"
-                value={filter.minPrice}
-                onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
-              />
-              <TextField
-                label="Max Sale Price"
-                type="number"
-                value={filter.maxPrice}
-                onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
-              />
-            </Box>
-            <TextField label="Search Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-          </Box>
-
-          <Box display="flex" gap={2} mb={3} sx={{
-            flexDirection: { xs: 'column', sm: 'row' },
-            '& .MuiSelect-root': {
-              width: { xs: '100%', sm: 'auto' }
-            }
-          }}>
-            <Select value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
-              <MenuItem value="vin">VIN</MenuItem>
-              <MenuItem value="make">Make</MenuItem>
-              <MenuItem value="model">Model</MenuItem>
-              <MenuItem value="purchase_price">Purchase Price</MenuItem>
-              <MenuItem value="sale_price">Sale Price</MenuItem>
-              <MenuItem value="purchase_date">Purchase Date</MenuItem>
-            </Select>
-            <Button 
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} 
-              variant="outlined"
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
-            >
-              {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-            </Button>
-          </Box>
-
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Box display="flex" gap={2}>
-              {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                VIN
-                <IconButton size="small" onClick={() => handleSort('vin')}>
-                  {sortKey === 'vin' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                </IconButton>
-              </Box> */}
-              {/* <Box sx={{ color: 'primary.main' }}>
-                ASCENDING
-              </Box> */}
+              <Typography variant="h6" component="div">
+                Filter & Sort
+              </Typography>
+              {isControlsExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </Box>
 
-            <Box display="flex" gap={2} sx={{
-              '& .MuiButton-root': {
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-                py: { xs: 1, sm: 1.5 }
-              }
-            }}>
-              <Button
-                variant="contained"
-                onClick={exportToExcel}
-                sx={{
-                  background: 'rgba(8, 11, 22, 0.85)',
-                  backdropFilter: 'blur(12px)',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  '&:hover': {
-                    background: 'rgba(8, 11, 22, 0.95)',
+            <Collapse in={isControlsExpanded}>
+              <Box mt={2}>
+                <Box display="flex" gap={2} mb={3} sx={{
+                  flexDirection: { xs: 'column', md: 'row' },
+                  '& .MuiSelect-root, & .MuiTextField-root': {
+                    width: { xs: '100%', md: 'auto' }
                   }
-                }}
-              >
-                Export to Excel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={exportToCSV}
-                sx={{
-                  background: 'rgba(8, 11, 22, 0.85)',
-                  backdropFilter: 'blur(12px)',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  '&:hover': {
-                    background: 'rgba(8, 11, 22, 0.95)',
+                }}>
+                  <Select
+                    value={filterSold}
+                    onChange={(e) => setFilterSold(e.target.value)}
+                    displayEmpty
+                    sx={{ minWidth: { xs: '100%', md: 150 } }}
+                  >
+                    <MenuItem value="available">Show Available</MenuItem>
+                    <MenuItem value="all">All</MenuItem>
+                    <MenuItem value="sold">Show Sold</MenuItem>
+                  </Select>
+
+                  <Select
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                    displayEmpty
+                    sx={{ minWidth: { xs: '100%', md: 120 } }}
+                  >
+                    <MenuItem value="">All Months</MenuItem>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                      <MenuItem key={month} value={month}>
+                        {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
+                      </MenuItem>
+                    ))}
+                  </Select>
+
+                  <Select
+                    value={filterYear}
+                    onChange={(e) => setFilterYear(e.target.value)}
+                    displayEmpty
+                    sx={{ minWidth: { xs: '100%', md: 120 } }}
+                  >
+                    <MenuItem value="">All Years</MenuItem>
+                    {[2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021].reverse().map((year) => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+
+                <Box display="flex" gap={2} mb={3} sx={{
+                  flexDirection: { xs: 'column', md: 'row' },
+                  '& .MuiTextField-root': {
+                    width: '100%'
                   }
-                }}
-              >
-                Export to CSV
-              </Button>
-              <Button
-                variant="contained"
-                onClick={printToPDF}
-                sx={{
-                  background: 'rgba(8, 11, 22, 0.85)',
-                  backdropFilter: 'blur(12px)',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  '&:hover': {
-                    background: 'rgba(8, 11, 22, 0.95)',
+                }}>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
+                    <TextField label="Filter by Make" value={filter.make} onChange={(e) => setFilter({ ...filter, make: e.target.value })} />
+                    <TextField label="Filter by Model" value={filter.model} onChange={(e) => setFilter({ ...filter, model: e.target.value })} />
+                  </Box>
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
+                    <TextField
+                      label="Min Sale Price"
+                      type="number"
+                      value={filter.minPrice}
+                      onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
+                    />
+                    <TextField
+                      label="Max Sale Price"
+                      type="number"
+                      value={filter.maxPrice}
+                      onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
+                    />
+                  </Box>
+                  <TextField label="Search Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+                </Box>
+
+                <Box display="flex" gap={2} mb={3} sx={{
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  '& .MuiSelect-root': {
+                    width: { xs: '100%', sm: 'auto' }
                   }
-                }}
-              >
-                Print to PDF
-              </Button>
-            </Box>
-          </Box>
+                }}>
+                  <Select value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
+                    <MenuItem value="vin">VIN</MenuItem>
+                    <MenuItem value="make">Make</MenuItem>
+                    <MenuItem value="model">Model</MenuItem>
+                    <MenuItem value="purchase_price">Purchase Price</MenuItem>
+                    <MenuItem value="sale_price">Sale Price</MenuItem>
+                    <MenuItem value="purchase_date">Purchase Date</MenuItem>
+                  </Select>
+                  <Button 
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} 
+                    variant="outlined"
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  >
+                    {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                  </Button>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box display="flex" gap={2}>
+                    {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      VIN
+                      <IconButton size="small" onClick={() => handleSort('vin')}>
+                        {sortKey === 'vin' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
+                      </IconButton>
+                    </Box> */}
+                    {/* <Box sx={{ color: 'primary.main' }}>
+                      ASCENDING
+                    </Box> */}
+                  </Box>
+
+                  <Box display="flex" gap={2} sx={{
+                    '& .MuiButton-root': {
+                      fontSize: { xs: '0.875rem', sm: '1rem' },
+                      py: { xs: 1, sm: 1.5 }
+                    }
+                  }}>
+                    <Button
+                      variant="contained"
+                      onClick={exportToExcel}
+                      sx={{
+                        background: 'rgba(8, 11, 22, 0.85)',
+                        backdropFilter: 'blur(12px)',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        '&:hover': {
+                          background: 'rgba(8, 11, 22, 0.95)',
+                        }
+                      }}
+                    >
+                      Export to Excel
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={exportToCSV}
+                      sx={{
+                        background: 'rgba(8, 11, 22, 0.85)',
+                        backdropFilter: 'blur(12px)',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        '&:hover': {
+                          background: 'rgba(8, 11, 22, 0.95)',
+                        }
+                      }}
+                    >
+                      Export to CSV
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={printToPDF}
+                      sx={{
+                        background: 'rgba(8, 11, 22, 0.85)',
+                        backdropFilter: 'blur(12px)',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        '&:hover': {
+                          background: 'rgba(8, 11, 22, 0.95)',
+                        }
+                      }}
+                    >
+                      Print to PDF
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+            </Collapse>
+          </Paper>
 
           <Box display="flex" justifyContent="space-between" mb={2}>
             <Box>
@@ -643,29 +666,42 @@ function Inventory() {
             </Box>
           </Box>
 
-          <Box mt={3}>
+          <Box mt={2}>
             <TableContainer 
               ref={tableContainerRef}
               component={Paper}
               sx={{ 
-                maxHeight: { xs: 'calc(100vh - 400px)', sm: 'calc(100vh - 300px)' },
+                maxHeight: isControlsExpanded ? 
+                  { xs: 'calc(100vh - 500px)', sm: 'calc(100vh - 400px)' } : 
+                  { xs: 'calc(100vh - 200px)', sm: 'calc(100vh - 150px)' },
                 position: 'relative',
                 width: '100%',
                 '& .MuiTable-root': {
                   minWidth: '100%',
                   width: '100%'
                 },
-                '& .MuiTableCell-root': {
-                  px: { xs: 1, sm: 2 },
-                  py: { xs: 1, sm: 1.5 },
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                '& .MuiTableRow-root:hover': {
+                  backgroundColor: 'rgba(0, 32, 96, 0.1) !important', // Darker blue with opacity
+                  cursor: 'pointer'
+                },
+                '& .MuiTableRow-root:nth-of-type(even)': {
+                  backgroundColor: 'rgba(0, 32, 96, 0.03)' // Very light darker blue for alternating rows
                 }
               }}
             >
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Purchase Date
                         <IconButton size="small" onClick={() => handleSort('purchase_date')}>
@@ -673,7 +709,16 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Year
                         <IconButton size="small" onClick={() => handleSort('year')}>
@@ -681,7 +726,16 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Make
                         <IconButton size="small" onClick={() => handleSort('make')}>
@@ -689,7 +743,16 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Model
                         <IconButton size="small" onClick={() => handleSort('model')}>
@@ -697,15 +760,60 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Trim</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Mileage</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Color</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Trim</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Mileage</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Color</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         VIN
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Purchase Price
                         <IconButton size="small" onClick={() => handleSort('purchase_price')}>
@@ -713,12 +821,66 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Title Received?</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Inspection Completed?</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Reconditioning Cost</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Total Cost</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Date Sold</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Title Received?</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Inspection Completed?</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Reconditioning Cost</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Total Cost</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Date Sold</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         Sale Price
                         <IconButton size="small" onClick={() => handleSort('sale_price')}>
@@ -726,11 +888,56 @@ function Inventory() {
                         </IconButton>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Gross Profit</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Vehicle Status</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Pending Issues</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Closing Statement</TableCell>
-                    <TableCell sx={{ backgroundColor: '#424242', color: 'white', fontWeight: 'bold', position: 'sticky', top: 0, zIndex: 1 }}>Actions</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Gross Profit</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Vehicle Status</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Pending Issues</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Closing Statement</TableCell>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -852,7 +1059,10 @@ function Inventory() {
                     <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}</TableCell>
                     <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}</TableCell>
                     <TableCell></TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_price || 0), 0))}</TableCell>
+                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                      const salePrice = Number(item.sale_price) || 0;
+                      return sum + salePrice;
+                    }, 0))}</TableCell>
                     <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_status === 'sold' ? item.sale_price - (item.purchase_price + (reconditioningCosts[item.vin] || 0)) : 0), 0))}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>

@@ -275,10 +275,10 @@ function ViewDeal() {
         const data = await response.json();
 
         if (response.ok) {
-          setPurchasePrice(data.purchase_price || 0);
-          setSalePrice(data.sale_price || 0);
+          setPurchasePrice(Number(data.purchase_price) || 0);
+          setSalePrice(Number(data.sale_price) || 0);
           setYearMakeModel({ year: data.year, make: data.make, model: data.model });
-          setMileage(data.mileage || 0);
+          setMileage(Number(data.mileage) || 0);
           setColor(data.color || '');
           setPurchaseDate(data.purchase_date || '');
           setSaleType(data.sale_type || '');
