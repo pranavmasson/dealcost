@@ -215,13 +215,21 @@ function Inventory() {
 
   const scrollHorizontally = (direction) => {
     if (tableContainerRef.current) {
-      tableContainerRef.current.scrollLeft += direction === 'left' ? -100 : 100;
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      tableContainerRef.current.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
     }
   };
 
   const scrollVertically = (direction) => {
     if (tableContainerRef.current) {
-      tableContainerRef.current.scrollTop += direction === 'up' ? -100 : 100;
+      const scrollAmount = direction === 'up' ? -300 : 300;
+      tableContainerRef.current.scrollBy({
+        top: scrollAmount,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -676,16 +684,34 @@ function Inventory() {
                   { xs: 'calc(100vh - 200px)', sm: 'calc(100vh - 150px)' },
                 position: 'relative',
                 width: '100%',
+                overflowX: 'auto',
+                overflowY: 'auto',
+                scrollBehavior: 'smooth',
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  height: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: '#f1f1f1',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0, 32, 96, 0.5)',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: 'rgba(0, 32, 96, 0.7)',
+                  },
+                },
                 '& .MuiTable-root': {
                   minWidth: '100%',
                   width: '100%'
                 },
                 '& .MuiTableRow-root:hover': {
-                  backgroundColor: 'rgba(0, 32, 96, 0.1) !important', // Darker blue with opacity
+                  backgroundColor: 'rgba(0, 32, 96, 0.1) !important',
                   cursor: 'pointer'
                 },
                 '& .MuiTableRow-root:nth-of-type(even)': {
-                  backgroundColor: 'rgba(0, 32, 96, 0.03)' // Very light darker blue for alternating rows
+                  backgroundColor: 'rgba(0, 32, 96, 0.03)'
                 }
               }}
             >
