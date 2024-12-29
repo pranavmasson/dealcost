@@ -43,7 +43,10 @@ function Inventory() {
   const [showSold, setShowSold] = useState(false);
   const [sortKey, setSortKey] = useState('vin');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [filter, setFilter] = useState({ make: '', model: '', minPrice: '', maxPrice: '' });
+  const [filter, setFilter] = useState({
+    make: '',
+    model: '',
+  });
   const [keyword, setKeyword] = useState('');
   const [reconditioningCosts, setReconditioningCosts] = useState({});
   const tableContainerRef = useRef(null);
@@ -199,17 +202,15 @@ function Inventory() {
       return true;
     })
     .filter((item) => {
-      const { make, model, minPrice, maxPrice } = filter;
+      const { make, model } = filter;
       const matchesMake = make ? item.make.toLowerCase().includes(make.toLowerCase()) : true;
       const matchesModel = model ? item.model.toLowerCase().includes(model.toLowerCase()) : true;
-      const matchesMinPrice = minPrice ? item.sale_price >= parseFloat(minPrice) : true;
-      const matchesMaxPrice = maxPrice ? item.sale_price <= parseFloat(maxPrice) : true;
       const matchesKeyword = keyword
         ? Object.values(item).some((value) =>
           value ? value.toString().toLowerCase().includes(keyword.toLowerCase()) : false
         )
         : true;
-      return matchesMake && matchesModel && matchesMinPrice && matchesMaxPrice && matchesKeyword;
+      return matchesMake && matchesModel && matchesKeyword;
     })
     .sort(sortInventory);
 
@@ -362,67 +363,139 @@ function Inventory() {
     const companyAddress = localStorage.getItem('address');
     const currentDate = format(new Date(), 'MM/dd/yyyy');
 
-    // Add header
-    doc.setFontSize(18);
-    doc.text(companyName || 'Inventory Report', 40, 40);
-    doc.setFontSize(12);
-    doc.text(`Address: ${companyAddress || ''}`, 40, 60);
-    doc.text(`Run Date: ${currentDate}`, 40, 80);
+    // Set consistent margins
+    const margin = 20; // Reduced margin
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header styling - smaller text
+    doc.setFontSize(16); // Reduced from 20
+    doc.setTextColor(0, 32, 96);
+    doc.text(companyName || 'Inventory Report', margin, margin);
+    
+    doc.setFontSize(10); // Reduced from 12
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Address: ${companyAddress || ''}`, margin, margin + 20);
+    doc.text(`Run Date: ${currentDate}`, margin, margin + 35);
 
-    const tableData = filteredSortedInventory.map(item => {
-      const reconditionCost = reconditioningCosts[item.vin] || 0;
-      const totalCost = item.purchase_price + reconditionCost;
-      const profit = item.sale_status === 'sold' ? item.sale_price - totalCost : 'N/A';
-
-      return [
-        item.purchase_date,
-        item.year,
-        item.make,
-        item.model,
-        item.trim,
-        item.mileage,
-        item.color,
-        item.vin,
-        formatPrice(item.purchase_price),
-        item.title_received,
-        item.inspection_received,
-        formatPrice(reconditionCost),
-        formatPrice(totalCost),
-        item.date_sold || 'N/A',
-        formatPrice(item.sale_price || 0),
-        formatPrice(profit),
-        item.sale_status,
-        item.pending_issues,
-        item.closing_statement
-      ];
-    });
-
-    // Add totals row
-    const totalsRow = [
-      'TOTALS', '', '', '', '', '', '', '',
-      formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0)),
-      '', '',
-      formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0)),
-      formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0)),
-      '',
-      formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_price || 0), 0)),
-      formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_status === 'sold' ? item.sale_price - (item.purchase_price + (reconditioningCosts[item.vin] || 0)) : 0), 0))
-    ];
-
-    doc.autoTable({
-      startY: 100,
+    // Table configuration with all columns
+    const tableConfig = {
+      startY: margin + 50, // Reduced top spacing
       head: [[
         'Purchase Date', 'Year', 'Make', 'Model', 'Trim', 'Mileage', 'Color', 'VIN',
-        'Purchase Price', 'Title', 'Inspection', 'Recon Cost',
+        'Purchase Price', 'Title?', 'Inspection?', 'Recon Cost',
         'Total Cost', 'Date Sold', 'Sale Price', 'Profit', 'Status',
-        'Issues', 'Notes'
+        'Pending Issues', 'Closing Statement'
       ]],
-      body: [...tableData, totalsRow],
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1 },
-      margin: { top: 100 },
-    });
+      body: filteredSortedInventory.map(item => {
+        const reconditionCost = reconditioningCosts[item.vin] || 0;
+        const totalCost = item.purchase_price + reconditionCost;
+        const profit = item.sale_status === 'sold' ? item.sale_price - totalCost : 'N/A';
 
+        return [
+          item.purchase_date || 'N/A',
+          item.year || 'N/A',
+          item.make || 'N/A',
+          item.model || 'N/A',
+          item.trim || 'N/A',
+          item.mileage || 'N/A',
+          item.color || 'N/A',
+          item.vin || 'N/A',
+          formatPrice(item.purchase_price),
+          item.title_received || 'N/A',
+          item.inspection_received || 'N/A',
+          formatPrice(reconditionCost),
+          formatPrice(totalCost),
+          item.date_sold || 'N/A',
+          formatPrice(item.sale_price || 0),
+          typeof profit === 'number' ? formatPrice(profit) : 'N/A',
+          item.sale_status || 'N/A',
+          item.pending_issues || 'N/A',
+          item.closing_statement || 'N/A'
+        ];
+      }),
+      foot: [[
+        'TOTALS', '', '', '', '', '', '', '',
+        formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0)),
+        '', '',
+        formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0)),
+        formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0)),
+        '',
+        formatPrice(filteredSortedInventory.reduce((sum, item) => {
+          const salePrice = Number(item.sale_price) || 0;
+          return sum + salePrice;
+        }, 0)),
+        formatPrice(filteredSortedInventory.reduce((sum, item) => {
+          if (item.sale_status === 'sold') {
+            const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
+            return sum + ((item.sale_price || 0) - totalCost);
+          }
+          return sum;
+        }, 0)),
+        '', '', ''
+      ]],
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 6, // Reduced from 8
+        cellPadding: 2, // Reduced from 4
+        lineColor: [0, 32, 96],
+        lineWidth: 0.5,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: [0, 32, 96],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+        fontSize: 7 // Slightly larger than body text
+      },
+      bodyStyles: {
+        textColor: [60, 60, 60],
+        halign: 'center'
+      },
+      footStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 32, 96],
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        // Set specific widths for columns that need it
+        0: { cellWidth: 45 }, // Purchase Date
+        1: { cellWidth: 25 }, // Year
+        2: { cellWidth: 35 }, // Make
+        3: { cellWidth: 40 }, // Model
+        4: { cellWidth: 35 }, // Trim
+        5: { cellWidth: 35 }, // Mileage
+        6: { cellWidth: 35 }, // Color
+        7: { cellWidth: 60 }, // VIN
+        8: { cellWidth: 45 }, // Purchase Price
+        9: { cellWidth: 25 }, // Title
+        10: { cellWidth: 35 }, // Inspection
+        11: { cellWidth: 40 }, // Recon Cost
+        12: { cellWidth: 40 }, // Total Cost
+        13: { cellWidth: 40 }, // Date Sold
+        14: { cellWidth: 40 }, // Sale Price
+        15: { cellWidth: 40 }, // Profit
+        16: { cellWidth: 35 }, // Status
+        17: { cellWidth: 45 }, // Pending Issues
+        18: { cellWidth: 45 }  // Closing Statement
+      },
+      margin: { left: margin, right: margin },
+      didDrawPage: function(data) {
+        // Add page numbers
+        doc.setFontSize(7);
+        doc.setTextColor(60, 60, 60);
+        doc.text(
+          `Page ${doc.internal.getNumberOfPages()}`,
+          pageWidth - margin,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'right' }
+        );
+      }
+    };
+
+    doc.autoTable(tableConfig);
     doc.save(`Inventory_${currentDate}.pdf`);
   };
 
@@ -536,33 +609,22 @@ function Inventory() {
                       </MenuItem>
                     ))}
                   </Select>
-                </Box>
 
-                <Box display="flex" gap={2} mb={3} sx={{
-                  flexDirection: { xs: 'column', md: 'row' },
-                  '& .MuiTextField-root': {
-                    width: '100%'
-                  }
-                }}>
-                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
-                    <TextField label="Filter by Make" value={filter.make} onChange={(e) => setFilter({ ...filter, make: e.target.value })} />
-                    <TextField label="Filter by Model" value={filter.model} onChange={(e) => setFilter({ ...filter, model: e.target.value })} />
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, width: '100%' }}>
-                    <TextField
-                      label="Min Sale Price"
-                      type="number"
-                      value={filter.minPrice}
-                      onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
-                    />
-                    <TextField
-                      label="Max Sale Price"
-                      type="number"
-                      value={filter.maxPrice}
-                      onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
-                    />
-                  </Box>
-                  <TextField label="Search Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+                  <TextField 
+                    label="Filter by Make" 
+                    value={filter.make} 
+                    onChange={(e) => setFilter({ ...filter, make: e.target.value })} 
+                  />
+                  <TextField 
+                    label="Filter by Model" 
+                    value={filter.model} 
+                    onChange={(e) => setFilter({ ...filter, model: e.target.value })} 
+                  />
+                  <TextField 
+                    label="Search Keyword" 
+                    value={keyword} 
+                    onChange={(e) => setKeyword(e.target.value)} 
+                  />
                 </Box>
 
                 <Box display="flex" gap={2} mb={3} sx={{
@@ -1089,7 +1151,13 @@ function Inventory() {
                       const salePrice = Number(item.sale_price) || 0;
                       return sum + salePrice;
                     }, 0))}</TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_status === 'sold' ? item.sale_price - (item.purchase_price + (reconditioningCosts[item.vin] || 0)) : 0), 0))}</TableCell>
+                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                      if (item.sale_status === 'sold') {
+                        const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
+                        return sum + ((item.sale_price || 0) - totalCost);
+                      }
+                      return sum;
+                    }, 0))}</TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </TableBody>
