@@ -452,41 +452,71 @@ def get_dashboard_data():
         if not username:
             return jsonify({"error": "Username is required"}), 400
 
-        # Get current month's start and end dates
+        # Get current date and 30 days ago date
         today = datetime.now()
-        start_of_month = datetime(today.year, today.month, 1)
+        thirty_days_ago = today - timedelta(days=30)
         
-        # Get all inventory for the user
+        print(f"Calculating for date range: {thirty_days_ago.strftime('%m/%d/%Y')} to {today.strftime('%m/%d/%Y')}")
+
+        # Get all inventory and reports
         all_inventory = list(inventory_collection.find({"username": username}))
-        for car in all_inventory:
-            car['_id'] = str(car['_id'])
-
-        # Get all maintenance reports
         all_reports = list(reports_collection.find({"username": username}))
-        
-        # Calculate current month's reconditioning cost with proper date parsing
-        current_month_reconditioning = sum(
-            float(report.get('cost', 0))
-            for report in all_reports
-            if datetime.strptime(report.get('date_occurred', '01/01/1900'), '%m/%d/%Y') >= start_of_month
-        )
 
-        # Calculate current month's profit from sold vehicles with proper date parsing
-        current_month_profit = sum(
-            float(car.get('sale_price', 0)) - float(car.get('purchase_price', 0))
-            for car in all_inventory
-            if car.get('sale_status') == 'sold' 
-            and datetime.strptime(car.get('date_sold', '01/01/1900'), '%m/%d/%Y') >= start_of_month
-        )
+        # Convert ObjectIds to strings
+        for item in all_inventory:
+            item['_id'] = str(item['_id'])
+        for report in all_reports:
+            report['_id'] = str(report['_id'])
 
-        # Get unsold inventory
+        # Calculate reconditioning costs for last 30 days (all expenses)
+        current_month_reconditioning = 0
+        for report in all_reports:
+            date_str = report.get('date_occurred', '')
+            if date_str:
+                try:
+                    report_date = datetime.strptime(date_str, '%m/%d/%Y')
+                    if thirty_days_ago <= report_date <= today:
+                        current_month_reconditioning += float(report.get('cost', 0))
+                except ValueError:
+                    continue
+
+        # Calculate profits for cars sold in last 30 days
+        current_month_profit = 0
+        print("\nCalculating profits for sold cars:")
+        for car in all_inventory:
+            if (car.get('sale_status') == 'sold' and 
+                car.get('date_sold') and 
+                car.get('sale_price')):
+                try:
+                    sale_date = datetime.strptime(car.get('date_sold'), '%m/%d/%Y')
+                    if thirty_days_ago <= sale_date <= today:
+                        # Get this specific car's reconditioning costs
+                        car_reconditioning = sum(
+                            float(report.get('cost', 0))
+                            for report in all_reports
+                            if report.get('vin') == car.get('vin')
+                        )
+                        
+                        # Calculate profit including reconditioning costs
+                        sale_price = float(car.get('sale_price', 0))
+                        purchase_price = float(car.get('purchase_price', 0))
+                        car_profit = sale_price - purchase_price - car_reconditioning
+                        current_month_profit += car_profit
+                        
+                        print(f"\nCar VIN: {car.get('vin')}")
+                        print(f"Sale Price: ${sale_price}")
+                        print(f"Purchase Price: ${purchase_price}")
+                        print(f"Reconditioning Costs: ${car_reconditioning}")
+                        print(f"Profit: ${car_profit}")
+                except ValueError:
+                    continue
+
+        # Calculate other metrics
         unsold_inventory = [car for car in all_inventory if car.get('sale_status') != 'sold']
-
-        # Calculate metrics
         total_vehicles = len(unsold_inventory)
         total_inventory_value = sum(float(car.get('purchase_price', 0)) for car in unsold_inventory)
         
-        # Calculate reconditioning cost for unsold inventory
+        # Calculate reconditioning costs for unsold inventory
         unsold_reconditioning_cost = sum(
             float(report.get('cost', 0))
             for report in all_reports
@@ -509,7 +539,10 @@ def get_dashboard_data():
             "total_consignment": total_consignment,
             "unsold_reconditioning_cost": unsold_reconditioning_cost,
         }
-        
+
+        print(f"\nFinal Calculations:")
+        print(f"Total 30-day reconditioning costs: ${current_month_reconditioning}")
+        print(f"Total 30-day profit from sold cars: ${current_month_profit}")
         return jsonify(response_data), 200
 
     except Exception as e:

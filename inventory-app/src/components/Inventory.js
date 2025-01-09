@@ -1046,7 +1046,16 @@ function Inventory() {
                         <TableCell>{item.vin}</TableCell>
                         <TableCell>{formatPrice(item.purchase_price)}</TableCell>
                         <TableCell>{item.title_received || 'N/A'}</TableCell>
-                        <TableCell>{item.inspection_received || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              color: item.inspection_received === 'no' ? 'error.main' : item.inspection_received === 'yes' ? 'success.main' : 'text.primary',
+                              fontWeight: 'medium'
+                            }}
+                          >
+                            {item.inspection_received === 'no' ? 'No' : item.inspection_received === 'yes' ? 'Yes' : 'N/A'}
+                          </Typography>
+                        </TableCell>
                         <TableCell>
                           <Typography
                             variant="body2"

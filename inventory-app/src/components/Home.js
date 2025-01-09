@@ -79,8 +79,11 @@ function Home() {
           throw new Error(data.error || 'Failed to fetch dashboard data');
         }
 
-        console.log('Setting dashboard data:', data);
-        setDashboardData(data);
+        setDashboardData({
+          ...data,
+          current_month_profit: data.current_month_profit
+        });
+
       } catch (err) {
         console.error('Dashboard Error:', err);
         setError(err.message);

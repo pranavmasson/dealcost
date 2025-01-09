@@ -474,9 +474,9 @@ function EditCar({ open, onClose, vin }) {
                               }}
                             />
                           </Grid>
-                          <Grid item xs={12} sm={6}>
+                          <Grid item xs={12} sm={4}>
                             <FormControl fullWidth>
-                              <InputLabel>Sale Type</InputLabel>
+                              <InputLabel>Purchase Fund Source</InputLabel>
                               <Select
                                 name="sale_type"
                                 value={formData.sale_type}
@@ -502,36 +502,7 @@ function EditCar({ open, onClose, vin }) {
                               </Select>
                             </FormControl>
                           </Grid>
-                          <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                              <InputLabel>Finance Type</InputLabel>
-                              <Select
-                                name="finance_type"
-                                value={formData.finance_type}
-                                onChange={handleChange}
-                                sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                      borderColor: 'rgba(0, 0, 0, 0.23)',
-                                      transition: 'border-color 0.3s',
-                                    },
-                                    '&:hover fieldset': {
-                                      borderColor: 'primary.main',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                      borderColor: 'primary.main',
-                                    },
-                                  },
-                                }}
-                              >
-                                <MenuItem value="na">N/A</MenuItem>
-                                <MenuItem value="cash">Cash</MenuItem>
-                                <MenuItem value="finance">Finance</MenuItem>
-                                <MenuItem value="outside finance">Outside Finance</MenuItem>
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                          <Grid item xs={12}>
+                          <Grid item xs={12} sm={4}>
                             <FormControl fullWidth>
                               <InputLabel>Title Received?</InputLabel>
                               <Select
@@ -559,9 +530,9 @@ function EditCar({ open, onClose, vin }) {
                               </Select>
                             </FormControl>
                           </Grid>
-                          <Grid item xs={12}>
+                          <Grid item xs={12} sm={4}>
                             <FormControl fullWidth>
-                              <InputLabel>inspection Done?</InputLabel>
+                              <InputLabel>Inspection Done?</InputLabel>
                               <Select
                                 name="inspection_received"
                                 value={formData.inspection_received}
