@@ -24,7 +24,7 @@ function AddCar() {
     mileage: '',
     color: '',
     purchase_price: '',
-    sale_price: '',
+    sale_price: '0',
     sale_type: '',
     finance_type: 'na',
     closing_statement: '',

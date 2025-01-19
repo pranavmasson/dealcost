@@ -87,13 +87,21 @@ function App() {
 
   const menuItemStyle = {
     my: 0.5,
-    mx: 1,
-    borderRadius: 1,
-    color: 'rgba(255, 255, 255, 0.9)',
-    transition: 'all 0.3s ease',
+    color: 'white',
+    borderLeft: '4px solid transparent',
+    '&.Mui-selected': {
+      backgroundColor: 'transparent',
+      borderLeft: '4px solid #4285f4',
+      color: '#4285f4',
+      '& .MuiListItemIcon-root': {
+        color: '#4285f4',
+      },
+      '&:hover': {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+      }
+    },
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.08)',
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
     }
   };
 
@@ -108,201 +116,176 @@ function App() {
         {/* Only render AppBar and Drawer if not on splash screen */}
         {!isOnSplashScreen && (
           <>
-            <AppBar
-              position="fixed"
-              sx={{
-                width: open ? `calc(100% - 240px)` : '100%',
-                ml: open ? `240px` : 0,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: 'rgba(13, 71, 161, 0.95)',
-                backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              <Toolbar sx={{ minHeight: '64px' }}>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <IconButton
-                    color="inherit"
-                    aria-label="open drawer"
-                    onClick={toggleDrawer}
-                    edge="start"
-                    sx={{ 
-                      mr: 2,
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      backdropFilter: 'blur(5px)',
-                      '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.1)',
-                      },
-                      ...(open && { display: 'none' })
-                    }}
-                  >
-                    <MenuIcon />
-                  </IconButton>
-                </motion.div>
-
-                {isAuthenticated && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    style={{ flexGrow: 1 }}
-                  >
-                    <Typography 
-                      variant="h6" 
-                      component="div" 
-                      sx={{ 
-                        textAlign: 'left',
-                        fontSize: { xs: '1.2rem', sm: '1.4rem' },
-                        fontWeight: 800,
-                        ml: 2,
-                        letterSpacing: '0.5px',
-                        background: 'linear-gradient(90deg, #fff 0%, #64B5F6 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: '0 0 30px rgba(100,181,246,0.2)',
-                        transition: 'all 0.4s ease',
-                        '&:hover': {
-                          letterSpacing: '1px',
-                          background: 'linear-gradient(90deg, #fff 30%, #90CAF9 100%)',
-                          WebkitBackgroundClip: 'text',
-                          WebkitTextFillColor: 'transparent',
-                        }
-                      }}
-                    >
-                      {companyName || localStorage.getItem('company_name')}
-                    </Typography>
-                  </motion.div>
-                )}
-              </Toolbar>
-            </AppBar>
-
             <Drawer
               variant="permanent"
-              open={open}
               sx={{
-                width: open ? 240 : 70,
+                width: 80,
                 flexShrink: 0,
                 '& .MuiDrawer-paper': {
-                  width: open ? 240 : 70,
+                  width: 80,
                   boxSizing: 'border-box',
-                  background: 'rgba(13, 71, 161, 0.95)',
-                  backdropFilter: 'blur(12px)',
-                  borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-                  transition: 'width 0.3s ease',
+                  background: '#2f4050',
                   overflowX: 'hidden',
-                },
-                '& .MuiList-root': {
-                  overflowX: 'hidden',
-                  width: '100%',
-                },
-                '& .MuiListItem-root': {
-                  width: 'auto',
-                  minWidth: open ? '240px' : '70px',
+                  mt: '80px',
+                  p: 0,
+                  m: 0,
+                  '& .MuiList-root': {
+                    p: 0,
+                    m: 0
+                  }
                 }
               }}
             >
-              <Toolbar>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <IconButton onClick={toggleDrawer} sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                    {open ? <ChevronLeftIcon /> : <MenuIcon />}
-                  </IconButton>
-                </motion.div>
-              </Toolbar>
-              <Box sx={{ 
-                overflowX: 'hidden',
-                overflowY: 'auto',
-                width: '100%',
-              }}>
-                <List sx={{ width: '100%' }}>
-                  <ListItem
-                    button
-                    onClick={() => navigate('/')}
-                    sx={{
-                      mb: 2,
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      borderRadius: 1,
-                      mx: 1,
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        transform: 'translateX(5px)',
-                      }
-                    }}
-                  >
-                    <StorefrontIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                    <Typography variant="h6" component="div" sx={{ 
-                      flexGrow: 1, 
-                      display: open ? 'block' : 'none',
-                      background: 'linear-gradient(90deg, #fff 0%, #90CAF9 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}>
-                      DealCost
-                    </Typography>
-                  </ListItem>
+              <List sx={{ p: 0, m: 0 }}>
+                {isAuthenticated ? (
+                  <>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/add-car')} 
+                      selected={location.pathname === '/add-car'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <DirectionsCarIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Add Vehicle
+                      </Typography>
+                    </ListItem>
 
-                  {!isAuthenticated ? (
-                    <>
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/login')} sx={menuItemStyle}>
-                          <LoginIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Login" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/inventory')} 
+                      selected={location.pathname === '/inventory'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <InventoryIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Inventory
+                      </Typography>
+                    </ListItem>
 
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/create-account')} sx={menuItemStyle}>
-                          <PersonAddIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Create Account" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
-                    </>
-                  ) : (
-                    <>
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/add-car')} sx={menuItemStyle}>
-                          <DirectionsCarIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Add Car" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/home')} 
+                      selected={location.pathname === '/home'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <DashboardIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Dashboard
+                      </Typography>
+                    </ListItem>
 
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/inventory')} sx={menuItemStyle}>
-                          <InventoryIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Inventory" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/user-settings')} 
+                      selected={location.pathname === '/user-settings'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <SettingsIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Settings
+                      </Typography>
+                    </ListItem>
 
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/home')} sx={menuItemStyle}>
-                          <DashboardIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Dashboard" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={handleLogout}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <LogoutIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Logout
+                      </Typography>
+                    </ListItem>
+                  </>
+                ) : (
+                  <>
+                    <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
+                      <ListItem button onClick={() => navigate('/login')} sx={menuItemStyle}>
+                        <LoginIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
+                        <ListItemText primary="Login" sx={{ display: open ? 'block' : 'none' }} />
+                      </ListItem>
+                    </motion.div>
 
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={() => navigate('/user-settings')} sx={menuItemStyle}>
-                          <SettingsIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="User Settings" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
-
-                      <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                        <ListItem button onClick={handleLogout} sx={menuItemStyle}>
-                          <LogoutIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                          <ListItemText primary="Logout" sx={{ display: open ? 'block' : 'none' }} />
-                        </ListItem>
-                      </motion.div>
-                    </>
-                  )}
-                </List>
-              </Box>
+                    <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
+                      <ListItem button onClick={() => navigate('/create-account')} sx={menuItemStyle}>
+                        <PersonAddIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
+                        <ListItemText primary="Create Account" sx={{ display: open ? 'block' : 'none' }} />
+                      </ListItem>
+                    </motion.div>
+                  </>
+                )}
+              </List>
             </Drawer>
+
+            <AppBar
+              position="fixed"
+              sx={{
+                width: 'calc(100% - 80px)',  // Full width minus sidebar width
+                background: '#4285f4',
+                height: '80px',
+                p: 0,
+                m: 0,
+                left: '80px',  // Start after the sidebar
+              }}
+            >
+              <Toolbar sx={{ 
+                minHeight: '80px',
+                height: '80px',
+                p: 0,
+                m: 0
+              }}>
+                <Typography 
+                  variant="h6" 
+                  component="div" 
+                  sx={{ 
+                    flexGrow: 1,
+                    fontSize: { xs: '1.2rem', sm: '1.4rem' },
+                    fontWeight: 600,
+                    color: 'white',
+                    p: 0,
+                    m: 0
+                  }}
+                >
+                  {companyName || localStorage.getItem('company_name')}
+                </Typography>
+              </Toolbar>
+            </AppBar>
           </>
         )}
 

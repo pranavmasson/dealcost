@@ -35,7 +35,7 @@ import Tooltip from '@mui/material/Tooltip';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 
 function Inventory() {
   const [inventory, setInventory] = useState([]);
@@ -43,10 +43,6 @@ function Inventory() {
   const [showSold, setShowSold] = useState(false);
   const [sortKey, setSortKey] = useState('vin');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [filter, setFilter] = useState({
-    make: '',
-    model: '',
-  });
   const [keyword, setKeyword] = useState('');
   const [reconditioningCosts, setReconditioningCosts] = useState({});
   const tableContainerRef = useRef(null);
@@ -177,7 +173,11 @@ function Inventory() {
   };
 
   const sortInventory = (a, b) => {
-    if (sortKey === 'purchase_date') {
+    if (sortKey === 'days_in_inventory') {
+      const daysA = calculateDaysInInventory(a);
+      const daysB = calculateDaysInInventory(b);
+      return sortOrder === 'asc' ? daysA - daysB : daysB - daysA;
+    } else if (sortKey === 'purchase_date') {
       const dateA = new Date(a.purchase_date || '');
       const dateB = new Date(b.purchase_date || '');
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
@@ -202,15 +202,11 @@ function Inventory() {
       return true;
     })
     .filter((item) => {
-      const { make, model } = filter;
-      const matchesMake = make ? item.make.toLowerCase().includes(make.toLowerCase()) : true;
-      const matchesModel = model ? item.model.toLowerCase().includes(model.toLowerCase()) : true;
-      const matchesKeyword = keyword
+      return keyword
         ? Object.values(item).some((value) =>
           value ? value.toString().toLowerCase().includes(keyword.toLowerCase()) : false
         )
         : true;
-      return matchesMake && matchesModel && matchesKeyword;
     })
     .sort(sortInventory);
 
@@ -512,6 +508,12 @@ function Inventory() {
     handleViewDeal(vin); // Assuming you want to use the same handler as the reconditioning cost click
   };
 
+  const calculateDaysInInventory = (item) => {
+    const purchaseDate = new Date(item.purchase_date);
+    const endDate = item.sale_status === 'sold' ? new Date(item.date_sold) : new Date();
+    return differenceInDays(endDate, purchaseDate);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
       {showAddSuccess && (
@@ -565,153 +567,190 @@ function Inventory() {
 
             <Collapse in={isControlsExpanded}>
               <Box mt={2}>
-                <Box display="flex" gap={2} mb={3} sx={{
-                  flexDirection: { xs: 'column', md: 'row' },
-                  '& .MuiSelect-root, & .MuiTextField-root': {
-                    width: { xs: '100%', md: 'auto' }
-                  }
-                }}>
-                  <Select
-                    value={filterSold}
-                    onChange={(e) => setFilterSold(e.target.value)}
-                    displayEmpty
-                    sx={{ minWidth: { xs: '100%', md: 150 } }}
+                <Box 
+                  display="flex" 
+                  gap={2} 
+                  mb={3} 
+                  alignItems="center"
+                  sx={{
+                    flexDirection: { xs: 'column', md: 'row' },
+                  }}
+                >
+                  {/* Status Filters Group */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2
+                    }}
                   >
-                    <MenuItem value="available">Show Available</MenuItem>
-                    <MenuItem value="all">All</MenuItem>
-                    <MenuItem value="sold">Show Sold</MenuItem>
-                  </Select>
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Status:
+                    </Typography>
+                    <Select
+                      value={filterSold}
+                      onChange={(e) => setFilterSold(e.target.value)}
+                      displayEmpty
+                      size="small"
+                      sx={{ minWidth: 120 }}
+                    >
+                      <MenuItem value="available">Show Available</MenuItem>
+                      <MenuItem value="all">All</MenuItem>
+                      <MenuItem value="sold">Show Sold</MenuItem>
+                    </Select>
+                  </Paper>
 
-                  <Select
-                    value={filterMonth}
-                    onChange={(e) => setFilterMonth(e.target.value)}
-                    displayEmpty
-                    sx={{ minWidth: { xs: '100%', md: 120 } }}
+                  {/* Time Filters Group */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2
+                    }}
                   >
-                    <MenuItem value="">All Months</MenuItem>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
-                      <MenuItem key={month} value={month}>
-                        {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Time Period:
+                    </Typography>
+                    <Select
+                      value={filterMonth}
+                      onChange={(e) => setFilterMonth(e.target.value)}
+                      displayEmpty
+                      size="small"
+                      disabled={filterSold === 'available'}
+                      sx={{ minWidth: 100 }}
+                    >
+                      <MenuItem value="">All Months</MenuItem>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <MenuItem key={month} value={month}>
+                          {new Date(0, month - 1).toLocaleString('default', { month: 'long' })}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <Select
+                      value={filterYear}
+                      onChange={(e) => setFilterYear(e.target.value)}
+                      displayEmpty
+                      size="small"
+                      sx={{ minWidth: 90 }}
+                    >
+                      <MenuItem value="">All Years</MenuItem>
+                      {[2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021].map((year) => (
+                        <MenuItem key={year} value={year}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Paper>
 
-                  <Select
-                    value={filterYear}
-                    onChange={(e) => setFilterYear(e.target.value)}
-                    displayEmpty
-                    sx={{ minWidth: { xs: '100%', md: 120 } }}
+                  {/* Search Group */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2,
+                      flexGrow: 1
+                    }}
                   >
-                    <MenuItem value="">All Years</MenuItem>
-                    {[2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021].reverse().map((year) => (
-                      <MenuItem key={year} value={year}>
-                        {year}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Search:
+                    </Typography>
+                    <TextField 
+                      placeholder="Search Keyword" 
+                      value={keyword} 
+                      onChange={(e) => setKeyword(e.target.value)}
+                      size="small"
+                      fullWidth
+                    />
+                  </Paper>
 
-                  <TextField 
-                    label="Filter by Make" 
-                    value={filter.make} 
-                    onChange={(e) => setFilter({ ...filter, make: e.target.value })} 
-                  />
-                  <TextField 
-                    label="Filter by Model" 
-                    value={filter.model} 
-                    onChange={(e) => setFilter({ ...filter, model: e.target.value })} 
-                  />
-                  <TextField 
-                    label="Search Keyword" 
-                    value={keyword} 
-                    onChange={(e) => setKeyword(e.target.value)} 
-                  />
-                </Box>
-
-                <Box display="flex" gap={2} mb={3} sx={{
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  '& .MuiSelect-root': {
-                    width: { xs: '100%', sm: 'auto' }
-                  }
-                }}>
-                  <Select value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
-                    <MenuItem value="vin">VIN</MenuItem>
-                    <MenuItem value="make">Make</MenuItem>
-                    <MenuItem value="model">Model</MenuItem>
-                    <MenuItem value="purchase_price">Purchase Price</MenuItem>
-                    <MenuItem value="sale_price">Sale Price</MenuItem>
-                    <MenuItem value="purchase_date">Purchase Date</MenuItem>
-                  </Select>
-                  <Button 
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} 
-                    variant="outlined"
-                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  {/* Sort Group */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2
+                    }}
                   >
-                    {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-                  </Button>
-                </Box>
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Sort:
+                    </Typography>
+                    <Select 
+                      value={sortKey} 
+                      onChange={(e) => setSortKey(e.target.value)}
+                      size="small"
+                      sx={{ minWidth: 120 }}
+                    >
+                      <MenuItem value="vin">VIN</MenuItem>
+                      <MenuItem value="make">Make</MenuItem>
+                      <MenuItem value="model">Model</MenuItem>
+                      <MenuItem value="purchase_price">Purchase Price</MenuItem>
+                      <MenuItem value="sale_price">Sale Price</MenuItem>
+                      <MenuItem value="purchase_date">Purchase Date</MenuItem>
+                      <MenuItem value="days_in_inventory">Days in Inventory</MenuItem>
+                    </Select>
+                    <Button 
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      variant="outlined"
+                      size="small"
+                      sx={{ minWidth: 100 }}
+                    >
+                      {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                    </Button>
+                  </Paper>
 
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Box display="flex" gap={2}>
-                    {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      VIN
-                      <IconButton size="small" onClick={() => handleSort('vin')}>
-                        {sortKey === 'vin' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                      </IconButton>
-                    </Box> */}
-                    {/* <Box sx={{ color: 'primary.main' }}>
-                      ASCENDING
-                    </Box> */}
-                  </Box>
-
-                  <Box display="flex" gap={2} sx={{
-                    '& .MuiButton-root': {
-                      fontSize: { xs: '0.875rem', sm: '1rem' },
-                      py: { xs: 1, sm: 1.5 }
-                    }
-                  }}>
+                  {/* Export Buttons Group */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Export:
+                    </Typography>
                     <Button
-                      variant="contained"
+                      size="small"
                       onClick={exportToExcel}
-                      sx={{
-                        background: 'rgba(8, 11, 22, 0.85)',
-                        backdropFilter: 'blur(12px)',
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        '&:hover': {
-                          background: 'rgba(8, 11, 22, 0.95)',
-                        }
-                      }}
+                      variant="outlined"
                     >
-                      Export to Excel
+                      Excel
                     </Button>
                     <Button
-                      variant="contained"
+                      size="small"
                       onClick={exportToCSV}
-                      sx={{
-                        background: 'rgba(8, 11, 22, 0.85)',
-                        backdropFilter: 'blur(12px)',
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        '&:hover': {
-                          background: 'rgba(8, 11, 22, 0.95)',
-                        }
-                      }}
+                      variant="outlined"
                     >
-                      Export to CSV
+                      CSV
                     </Button>
                     <Button
-                      variant="contained"
+                      size="small"
                       onClick={printToPDF}
-                      sx={{
-                        background: 'rgba(8, 11, 22, 0.85)',
-                        backdropFilter: 'blur(12px)',
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        '&:hover': {
-                          background: 'rgba(8, 11, 22, 0.95)',
-                        }
-                      }}
+                      variant="outlined"
                     >
-                      Print to PDF
+                      PDF
                     </Button>
-                  </Box>
+                  </Paper>
                 </Box>
               </Box>
             </Collapse>
@@ -780,6 +819,23 @@ function Inventory() {
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
+                    <TableCell 
+                      sx={{ 
+                        backgroundColor: 'rgb(0, 32, 96) !important',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Days in Inventory
+                        <IconButton size="small" onClick={() => handleSort('days_in_inventory')}>
+                          {sortKey === 'days_in_inventory' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
+                        </IconButton>
+                      </Box>
+                    </TableCell>
                     <TableCell 
                       sx={{ 
                         backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
@@ -1036,6 +1092,9 @@ function Inventory() {
 
                     return (
                       <TableRow key={item._id} hover sx={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white' }}>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {calculateDaysInInventory(item)}
+                        </TableCell>
                         <TableCell>{item.purchase_date}</TableCell>
                         <TableCell>{item.year}</TableCell>
                         <TableCell>{item.make || 'N/A'}</TableCell>
@@ -1060,7 +1119,12 @@ function Inventory() {
                           <Typography
                             variant="body2"
                             color="primary"
-                            sx={{ cursor: 'pointer', textDecoration: 'underline' }}
+                            sx={{ 
+                              cursor: 'pointer', 
+                              textDecoration: 'underline',
+                              textAlign: 'right',  // Add right alignment
+                              display: 'block'      // Make it a block element to ensure alignment works
+                            }}
                             onClick={() => handleViewDeal(item.vin)}
                           >
                             {formatPrice(reconditionCost)}
@@ -1072,14 +1136,20 @@ function Inventory() {
                         <TableCell>{item.sale_status === 'sold' ? formatPrice(profit) : profit}</TableCell>
                         <TableCell>{item.sale_status}</TableCell>
                         <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: 'red', // Red text for pending issues
-                            }}
-                          >
-                            {item.pending_issues} {/* Replace 'None' with a default if no data */}
-                          </Typography>
+                          <Tooltip title={item.pending_issues || 'N/A'} arrow>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxWidth: 200,
+                                color: 'red',
+                              }}
+                            >
+                              {item.pending_issues || 'N/A'}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
                         <TableCell>
                           <Tooltip title={item.closing_statement || 'N/A'} arrow>
@@ -1099,7 +1169,7 @@ function Inventory() {
 
                         <TableCell
                           sx={{
-                            textAlign: 'center', // Center the buttons in the actions column
+                            textAlign: 'center',
                           }}
                         >
                           <Box display="flex" gap={1} justifyContent="center" sx={{
@@ -1126,14 +1196,6 @@ function Inventory() {
                             </Button>
                             <Button
                               variant="outlined"
-                              onClick={() => handleOpenManualEntry(item.vin)}
-                              size="small"
-                              sx={{ color: '#1976d2' }}
-                            >
-                              Add Expense
-                            </Button>
-                            <Button
-                              variant="outlined"
                               onClick={() => handleDeleteCar(item.vin)}
                               size="small"
                               sx={{ color: '#d32f2f' }}
@@ -1148,30 +1210,60 @@ function Inventory() {
                   })}
                   {/* Add totals row */}
                   <TableRow sx={{ backgroundColor: '#e0f7fa', fontWeight: 'bold' }}>
-                    <TableCell colSpan={9} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    <TableCell colSpan={8} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                       Totals:
                     </TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}</TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}
+                    </TableCell>
                     <TableCell></TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}</TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}</TableCell>
                     <TableCell></TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => {
-                      const salePrice = Number(item.sale_price) || 0;
-                      return sum + salePrice;
-                    }, 0))}</TableCell>
-                    <TableCell>{formatPrice(filteredSortedInventory.reduce((sum, item) => {
-                      if (item.sale_status === 'sold') {
-                        const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
-                        return sum + ((item.sale_price || 0) - totalCost);
-                      }
-                      return sum;
-                    }, 0))}</TableCell>
+                    <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                        const salePrice = Number(item.sale_price) || 0;
+                        return sum + salePrice;
+                      }, 0))}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                        if (item.sale_status === 'sold') {
+                          const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
+                          return sum + ((item.sale_price || 0) - totalCost);
+                        }
+                        return sum;
+                      }, 0))}
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      {Math.round(filteredSortedInventory.reduce((sum, item) => sum + calculateDaysInInventory(item), 0) / filteredSortedInventory.length) || 0}
+                    </TableCell>
                     <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
+          </Box>
+
+          <Box 
+            mt={2} 
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              p: 2,
+              borderRadius: 2,
+              background: theme => `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Total Vehicles: {filteredSortedInventory.length}
+            </Typography>
           </Box>
 
           <Modal open={open} onClose={handleClose}>

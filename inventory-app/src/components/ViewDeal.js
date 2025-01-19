@@ -27,6 +27,7 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LocalPrintshopIcon from '@mui/icons-material/LocalPrintshop';
 import AddIcon from '@mui/icons-material/Add';
 import EnterDetailsManually from './EnterDetailsManually';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 ChartJS.register(ChartDataLabels);
@@ -313,7 +314,14 @@ function ViewDeal() {
     };
 
     fetchMaintenanceRecords();
-  }, [vin]);
+    
+    // Check for refresh flag
+    const shouldRefresh = localStorage.getItem('refreshDealCost');
+    if (shouldRefresh) {
+      localStorage.removeItem('refreshDealCost');
+      fetchMaintenanceRecords();
+    }
+  }, [vin, manualEntryOpen]); // Add manualEntryOpen as a dependency
 
   const calculateTotalMaintenance = (records) => {
     const total = records.reduce((sum, record) => sum + parseFloat(record.cost), 0);
@@ -431,6 +439,30 @@ function ViewDeal() {
     >
       <Container maxWidth="lg">
         <Box mt={5}>
+          {/* Add Back Button */}
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/inventory')}
+              sx={{
+                mb: 2,
+                color: 'primary.main',
+                borderColor: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'rgba(33, 150, 243, 0.04)',
+                  borderColor: 'primary.dark',
+                }
+              }}
+            >
+              Back to Inventory
+            </Button>
+          </motion.div>
+
           {/* Header Section */}
           <motion.div
             initial={{ y: -20 }}
