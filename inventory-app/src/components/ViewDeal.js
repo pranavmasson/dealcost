@@ -15,6 +15,7 @@ import {
   TableRow,
   Paper,
   Modal,
+  CircularProgress,
 } from '@mui/material';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -46,6 +47,8 @@ function ViewDeal() {
   const [color, setColor] = useState('');
   const [purchase_date, setPurchaseDate] = useState('');
   const [sale_type, setSaleType] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [purchaser, setPurchaser] = useState('');
 
   const handlePrint = () => {
     setTimeout(() => {
@@ -192,6 +195,7 @@ function ViewDeal() {
               <p><strong>Color:</strong> ${color}</p>
               <p><strong>Purchase Date:</strong> ${purchase_date}</p>
               <p><strong>Purchase Type:</strong> ${sale_type.charAt(0).toUpperCase() + sale_type.slice(1)}</p>
+              <p><strong>Purchaser:</strong> ${purchaser}</p>
             </div>
 
             <div class="divider"></div>
@@ -271,6 +275,7 @@ function ViewDeal() {
 
   useEffect(() => {
     const fetchCarDetails = async () => {
+      setLoading(true);
       try {
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/inventory/${vin}`);
         const data = await response.json();
@@ -283,12 +288,15 @@ function ViewDeal() {
           setColor(data.color || '');
           setPurchaseDate(data.purchase_date || '');
           setSaleType(data.sale_type || '');
+          setPurchaser(data.purchaser || '');
         } else {
           setError(data.error || 'Error fetching car details');
         }
       } catch (error) {
         console.error('Error fetching car details:', error);
         setError('Error fetching car details');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -510,6 +518,9 @@ function ViewDeal() {
                       </Typography>
                     </Grid>
                   </Grid>
+                  <Typography variant="body1" color="textSecondary">
+                    <strong>Purchaser:</strong> {purchaser}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <Box display="flex" justifyContent="flex-end">
@@ -685,9 +696,15 @@ function ViewDeal() {
                     flexDirection: 'column',
                     alignItems: 'center'
                   }}>
-                    <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                      <Pie data={pieData} options={pieOptions} />
-                    </Box>
+                    {loading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : (
+                      <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                        <Pie data={pieData} options={pieOptions} />
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               </motion.div>

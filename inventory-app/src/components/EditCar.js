@@ -12,11 +12,13 @@ import {
   Switch,
   TextField,
   Typography,
+  IconButton,
 } from '@mui/material';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import CloseIcon from '@mui/icons-material/Close';
 
 const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -36,7 +38,8 @@ function EditCar({ open, onClose, vin }) {
     color: '',
     purchase_price: '',
     sale_price: '',
-    sale_type: '',
+    purchaser: '',
+    sale_type: 'na',
     finance_type: 'na',
     sale_status: 'available',
     purchase_date: new Date(),
@@ -100,11 +103,14 @@ function EditCar({ open, onClose, vin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage('');
 
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/update_vehicle/${vin}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           ...formData,
           purchase_date: formatDate(formData.purchase_date),
@@ -112,22 +118,27 @@ function EditCar({ open, onClose, vin }) {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update car');
+      if (response.ok) {
+        setMessage('Car updated successfully!');
+      } else {
+        const data = await response.json();
+        console.error('Server error:', data.error);
       }
-
-      const data = await response.json();
-      setMessage('Car updated successfully!');
+      
+      // Always close and navigate back, even if there were no changes
       setTimeout(() => {
-        setMessage('');
         onClose();
-        navigate('/inventory', { replace: true });
-        window.location.reload();
-      }, 2000);
+        navigate('/inventory', { state: { refresh: true } });
+      }, 500);
     } catch (error) {
       console.error('Error updating car:', error);
-      setMessage(error.message || 'An error occurred');
+      setMessage('An error occurred while updating the car');
+      
+      // Even on error, close and navigate back
+      setTimeout(() => {
+        onClose();
+        navigate('/inventory', { state: { refresh: true } });
+      }, 500);
     }
   };
 
@@ -177,6 +188,25 @@ function EditCar({ open, onClose, vin }) {
                 },
               }}
             >
+              <IconButton
+                onClick={onClose}
+                sx={{
+                  position: 'absolute',
+                  right: 8,
+                  top: 8,
+                  color: (theme) => theme.palette.grey[500],
+                  padding: '12px',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: '28px',
+                  },
+                  '&:hover': {
+                    color: (theme) => theme.palette.grey[700],
+                  },
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+
               {loading ? (
                 <Typography variant="h6">Loading...</Typography>
               ) : (
@@ -395,6 +425,29 @@ function EditCar({ open, onClose, vin }) {
                             onChange={handleChange}
                             fullWidth
                             required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: 'rgba(0, 0, 0, 0.23)',
+                                  transition: 'border-color 0.3s',
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            label="Purchaser"
+                            name="purchaser"
+                            value={formData.purchaser}
+                            onChange={handleChange}
+                            fullWidth
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 '& fieldset': {

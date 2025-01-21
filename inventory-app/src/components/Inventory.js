@@ -19,8 +19,10 @@ import {
   IconButton,
   Collapse,
   alpha,
+  CircularProgress,
+  Grid,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -36,12 +38,13 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { format, differenceInDays } from 'date-fns';
+import { useTheme } from '@mui/material/styles';
 
 function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [error, setError] = useState('');
   const [showSold, setShowSold] = useState(false);
-  const [sortKey, setSortKey] = useState('vin');
+  const [sortKey, setSortKey] = useState('days_in_inventory');
   const [sortOrder, setSortOrder] = useState('asc');
   const [keyword, setKeyword] = useState('');
   const [reconditioningCosts, setReconditioningCosts] = useState({});
@@ -62,6 +65,11 @@ function Inventory() {
 
   const [isControlsExpanded, setIsControlsExpanded] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+
+  const theme = useTheme();
+  const [reports, setReports] = useState([]);
+
   const handleOpenManualEntry = (vin) => {
     setManualEntryVin(vin);
     setManualEntryOpen(true);
@@ -73,6 +81,7 @@ function Inventory() {
   };
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const modalAnimation = {
     initial: { opacity: 0, scale: 0.9 },
@@ -80,25 +89,28 @@ function Inventory() {
     exit: { opacity: 0, scale: 0.9, transition: { duration: 0.3 } },
   };
 
-  useEffect(() => {
-    const fetchInventory = async () => {
-      try {
-        const username = localStorage.getItem('username');
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/inventory?username=${username}`);
-        const data = await response.json();
+  const fetchInventory = async () => {
+    setLoading(true);
+    try {
+      const username = localStorage.getItem('username');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/inventory?username=${username}`);
+      const data = await response.json();
 
-        if (response.ok) {
-          setInventory(data.inventory);
-          calculateReconditioningCosts(data.inventory, username);
-        } else {
-          setError(data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching inventory:', error);
-        setError('An error occurred while fetching inventory');
+      if (response.ok) {
+        setInventory(data.inventory);
+        calculateReconditioningCosts(data.inventory, username);
+      } else {
+        setError(data.error);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+      setError('An error occurred while fetching inventory');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchInventory();
   }, []);
 
@@ -110,6 +122,13 @@ function Inventory() {
       setTimeout(() => setShowAddSuccess(false), 3000);
     }
   }, []);
+
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchInventory();
+      navigate('/inventory', { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const calculateReconditioningCosts = async (inventory, username) => {
     const costs = {};
@@ -170,6 +189,12 @@ function Inventory() {
       maximumFractionDigits: 2,
       notation: 'standard'
     }).format(Number(price));
+  };
+
+  const calculateDaysInInventory = (item) => {
+    const purchaseDate = new Date(item.purchase_date);
+    const endDate = item.sale_status === 'sold' ? new Date(item.date_sold) : new Date();
+    return differenceInDays(endDate, purchaseDate);
   };
 
   const sortInventory = (a, b) => {
@@ -508,11 +533,70 @@ function Inventory() {
     handleViewDeal(vin); // Assuming you want to use the same handler as the reconditioning cost click
   };
 
-  const calculateDaysInInventory = (item) => {
-    const purchaseDate = new Date(item.purchase_date);
-    const endDate = item.sale_status === 'sold' ? new Date(item.date_sold) : new Date();
-    return differenceInDays(endDate, purchaseDate);
+  // Add these calculation functions
+  const calculateAverageProfitPerCar = (inventory, reports) => {
+    if (!inventory.length) return 0;
+    
+    const totalProfit = inventory.reduce((sum, car) => {
+      const carReconditioning = reports
+        .filter(report => report.vin === car.vin)
+        .reduce((total, report) => total + parseFloat(report.cost || 0), 0);
+      
+      const salePrice = parseFloat(car.sale_price || 0);
+      const purchasePrice = parseFloat(car.purchase_price || 0);
+      const profit = salePrice - purchasePrice - carReconditioning;
+      return sum + profit;
+    }, 0);
+
+    return totalProfit / inventory.length;
   };
+
+  const calculateAverageProfitByPurchaser = (inventory, reports) => {
+    const purchaserProfits = inventory.reduce((acc, car) => {
+      const purchaser = car.purchaser || 'Unknown';
+      if (!acc[purchaser]) {
+        acc[purchaser] = {
+          totalProfit: 0,
+          count: 0
+        };
+      }
+
+      const carReconditioning = reports
+        .filter(report => report.vin === car.vin)
+        .reduce((total, report) => total + parseFloat(report.cost || 0), 0);
+      
+      const salePrice = parseFloat(car.sale_price || 0);
+      const purchasePrice = parseFloat(car.purchase_price || 0);
+      const profit = salePrice - purchasePrice - carReconditioning;
+
+      acc[purchaser].totalProfit += profit;
+      acc[purchaser].count += 1;
+      return acc;
+    }, {});
+
+    return Object.entries(purchaserProfits).map(([purchaser, data]) => ({
+      purchaser,
+      averageProfit: data.totalProfit / data.count,
+      numberOfCars: data.count
+    }));
+  };
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const username = localStorage.getItem('username');
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/reports?username=${username}`);
+        if (response.ok) {
+          const data = await response.json();
+          setReports(data);
+        }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+      }
+    };
+
+    fetchReports();
+  }, []);
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -813,440 +897,242 @@ function Inventory() {
                 },
                 '& .MuiTableRow-root:nth-of-type(even)': {
                   backgroundColor: 'rgba(0, 32, 96, 0.03)'
+                },
+                '& .MuiTableCell-root': {
+                  padding: '4px 6px',
+                  fontSize: '0.75rem',
+                  whiteSpace: 'nowrap',
+                  borderRight: '1px solid rgba(0, 0, 0, 1)',
+                  '&:last-child': {
+                    borderRight: 'none'
+                  }
+                },
+                '& .MuiTableCell-head': {
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  height: '48px',
+                  padding: '8px 6px',
+                  backgroundColor: 'rgb(0, 32, 96) !important',
+                  color: 'white',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                  borderRight: '1px solid rgba(255, 255, 255, 0.3)',
+                  '&:last-child': {
+                    borderRight: 'none'
+                  }
+                },
+                '& .MuiButton-root': {
+                  padding: '2px 8px',
+                  fontSize: '0.7rem',
+                  minWidth: 'auto',
+                },
+                '& .MuiTypography-root': {
+                  fontSize: '0.75rem',
+                },
+                '& .MuiTableCell-head, & .MuiTableCell-body': {
+                  '&:nth-of-type(1)': { width: '80px' },
+                  '&:nth-of-type(2)': { width: '90px' },
+                  '&:nth-of-type(3)': { width: '60px' },
+                  '&:nth-of-type(4)': { width: '80px' },
+                  '&:nth-of-type(5)': { width: '80px' },
                 }
               }}
             >
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Days in Inventory
-                        <IconButton size="small" onClick={() => handleSort('days_in_inventory')}>
-                          {sortKey === 'days_in_inventory' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Purchase Date
-                        <IconButton size="small" onClick={() => handleSort('purchase_date')}>
-                          {sortKey === 'purchase_date' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Year
-                        <IconButton size="small" onClick={() => handleSort('year')}>
-                          {sortKey === 'year' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Make
-                        <IconButton size="small" onClick={() => handleSort('make')}>
-                          {sortKey === 'make' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Model
-                        <IconButton size="small" onClick={() => handleSort('model')}>
-                          {sortKey === 'model' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Trim</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Mileage</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Color</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        VIN
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Purchase Price
-                        <IconButton size="small" onClick={() => handleSort('purchase_price')}>
-                          {sortKey === 'purchase_price' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Title Received?</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Inspection Completed?</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Reconditioning Cost</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Total Cost</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Date Sold</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        Sale Price
-                        <IconButton size="small" onClick={() => handleSort('sale_price')}>
-                          {sortKey === 'sale_price' && (sortOrder === 'asc' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />)}
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Gross Profit</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Vehicle Status</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Pending Issues</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Closing Statement</TableCell>
-                    <TableCell 
-                      sx={{ 
-                        backgroundColor: 'rgb(0, 32, 96) !important', // Darker blue for headers
-                        color: 'white',
-                        fontWeight: 'bold',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1
-                      }}
-                    >Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredSortedInventory.map((item, index) => {
-                    const reconditionCost = reconditioningCosts[item.vin] || 0;
-                    const totalCost = item.purchase_price + reconditionCost;
-                    const profit = item.sale_status === 'sold' ? item.sale_price - totalCost : 'N/A';
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      {/* Common columns that always show */}
+                      <TableCell>Days in Inventory</TableCell>
+                      <TableCell>Purchase Date</TableCell>
+                      <TableCell>Year</TableCell>
+                      <TableCell>Make</TableCell>
+                      <TableCell>Model</TableCell>
+                      <TableCell>Trim</TableCell>
+                      <TableCell>Mileage</TableCell>
+                      <TableCell>Color</TableCell>
+                      <TableCell>VIN</TableCell>
+                      <TableCell>Purchase Price</TableCell>
+                      <TableCell>Title Received?</TableCell>
+                      <TableCell>Inspection Completed?</TableCell>
+                      <TableCell>Reconditioning Cost</TableCell>
+                      <TableCell>Total Cost</TableCell>
+                      <TableCell>Purchaser</TableCell>
 
-                    return (
-                      <TableRow key={item._id} hover sx={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white' }}>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          {calculateDaysInInventory(item)}
-                        </TableCell>
-                        <TableCell>{item.purchase_date}</TableCell>
-                        <TableCell>{item.year}</TableCell>
-                        <TableCell>{item.make || 'N/A'}</TableCell>
-                        <TableCell>{item.model || 'N/A'}</TableCell>
-                        <TableCell>{item.trim || 'N/A'}</TableCell>
-                        <TableCell>{item.mileage || 'N/A'}</TableCell>
-                        <TableCell>{item.color || 'N/A'}</TableCell>
-                        <TableCell>{item.vin}</TableCell>
-                        <TableCell>{formatPrice(item.purchase_price)}</TableCell>
-                        <TableCell>{item.title_received || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Typography
+                      {/* Additional columns for sold/all vehicles */}
+                      {(filterSold === 'sold' || filterSold === 'all') && (
+                        <>
+                          <TableCell>Date Sold</TableCell>
+                          <TableCell>Sale Price</TableCell>
+                          <TableCell>Profit</TableCell>
+                          <TableCell>Closing Statement</TableCell>
+                        </>
+                      )}
+                      
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredSortedInventory.map((item, index) => {
+                      const reconditionCost = reconditioningCosts[item.vin] || 0;
+                      const totalCost = item.purchase_price + reconditionCost;
+                      const profit = item.sale_status === 'sold' ? item.sale_price - totalCost : 'N/A';
+
+                      return (
+                        <TableRow key={item._id} hover sx={{ backgroundColor: index % 2 === 0 ? '#f5f5f5' : 'white' }}>
+                          <TableCell sx={{ textAlign: 'center' }}>
+                            {calculateDaysInInventory(item)}
+                          </TableCell>
+                          <TableCell>{item.purchase_date}</TableCell>
+                          <TableCell>{item.year}</TableCell>
+                          <TableCell>{item.make || 'N/A'}</TableCell>
+                          <TableCell>{item.model || 'N/A'}</TableCell>
+                          <TableCell>{item.trim || 'N/A'}</TableCell>
+                          <TableCell>{item.mileage || 'N/A'}</TableCell>
+                          <TableCell>{item.color || 'N/A'}</TableCell>
+                          <TableCell>{item.vin}</TableCell>
+                          <TableCell>{formatPrice(item.purchase_price)}</TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                color: item.title_received === 'no' ? 'error.main' : item.title_received === 'yes' ? 'success.main' : 'text.primary',
+                                fontWeight: 'medium'
+                              }}
+                            >
+                              {item.title_received === 'no' ? 'No' : item.title_received === 'yes' ? 'Yes' : 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                color: item.inspection_received === 'no' ? 'error.main' : item.inspection_received === 'yes' ? 'success.main' : 'text.primary',
+                                fontWeight: 'medium'
+                              }}
+                            >
+                              {item.inspection_received === 'no' ? 'No' : item.inspection_received === 'yes' ? 'Yes' : 'N/A'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              color="primary"
+                              sx={{ 
+                                cursor: 'pointer', 
+                                textDecoration: 'underline',
+                                textAlign: 'right',
+                                display: 'block'
+                              }}
+                              onClick={() => handleViewDeal(item.vin)}
+                            >
+                              {formatPrice(reconditionCost)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{formatPrice(totalCost)}</TableCell>
+                          <TableCell>{item.purchaser || 'N/A'}</TableCell>
+                          {(filterSold === 'sold' || filterSold === 'all') && (
+                            <>
+                              <TableCell>{item.date_sold || 'N/A'}</TableCell>
+                              <TableCell>{formatPrice(item.sale_price || 0)}</TableCell>
+                              <TableCell>{item.sale_status === 'sold' ? formatPrice(profit) : 'N/A'}</TableCell>
+                              <TableCell>
+                                <Tooltip title={item.closing_statement || 'N/A'} arrow>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      maxWidth: 200,
+                                    }}
+                                  >
+                                    {item.closing_statement || 'N/A'}
+                                  </Typography>
+                                </Tooltip>
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell
                             sx={{
-                              color: item.inspection_received === 'no' ? 'error.main' : item.inspection_received === 'yes' ? 'success.main' : 'text.primary',
-                              fontWeight: 'medium'
+                              textAlign: 'center',
                             }}
                           >
-                            {item.inspection_received === 'no' ? 'No' : item.inspection_received === 'yes' ? 'Yes' : 'N/A'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            color="primary"
-                            sx={{ 
-                              cursor: 'pointer', 
-                              textDecoration: 'underline',
-                              textAlign: 'right',  // Add right alignment
-                              display: 'block'      // Make it a block element to ensure alignment works
-                            }}
-                            onClick={() => handleViewDeal(item.vin)}
-                          >
-                            {formatPrice(reconditionCost)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{formatPrice(totalCost)}</TableCell>
-                        <TableCell>{item.date_sold || 'N/A'}</TableCell>
-                        <TableCell>{formatPrice(item.sale_price || 0)}</TableCell>
-                        <TableCell>{item.sale_status === 'sold' ? formatPrice(profit) : profit}</TableCell>
-                        <TableCell>{item.sale_status}</TableCell>
-                        <TableCell>
-                          <Tooltip title={item.pending_issues || 'N/A'} arrow>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: 200,
-                                color: 'red',
-                              }}
-                            >
-                              {item.pending_issues || 'N/A'}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title={item.closing_statement || 'N/A'} arrow>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                maxWidth: 200, // Adjust as needed
-                              }}
-                            >
-                              {item.closing_statement || 'N/A'}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
-
-                        <TableCell
-                          sx={{
-                            textAlign: 'center',
-                          }}
-                        >
-                          <Box display="flex" gap={1} justifyContent="center" sx={{
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            '& .MuiButton-root': {
-                              minWidth: { xs: '100px', sm: 'auto' },
-                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                              py: { xs: 0.5, sm: 1 }
-                            }
-                          }}>
-                            <Button 
-                              variant="outlined" 
-                              size="small"
-                              onClick={() => handleDealCost(item.vin)}
-                            >
-                              DealCost
-                            </Button>
-                            <Button 
-                              variant="outlined" 
-                              size="small" 
-                              onClick={() => handleOpen(item.vin)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              onClick={() => handleDeleteCar(item.vin)}
-                              size="small"
-                              sx={{ color: '#d32f2f' }}
-                            >
-                              Delete
-                            </Button>
-                          </Box>
-                        </TableCell>
-
-                      </TableRow>
-                    );
-                  })}
-                  {/* Add totals row */}
-                  <TableRow sx={{ backgroundColor: '#e0f7fa', fontWeight: 'bold' }}>
-                    <TableCell colSpan={8} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
-                      Totals:
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}
-                    </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
-                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}
-                    </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      {formatPrice(filteredSortedInventory.reduce((sum, item) => {
-                        const salePrice = Number(item.sale_price) || 0;
-                        return sum + salePrice;
-                      }, 0))}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      {formatPrice(filteredSortedInventory.reduce((sum, item) => {
-                        if (item.sale_status === 'sold') {
-                          const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
-                          return sum + ((item.sale_price || 0) - totalCost);
-                        }
-                        return sum;
-                      }, 0))}
-                    </TableCell>
-                    <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      {Math.round(filteredSortedInventory.reduce((sum, item) => sum + calculateDaysInInventory(item), 0) / filteredSortedInventory.length) || 0}
-                    </TableCell>
-                    <TableCell colSpan={3}></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                            <Box display="flex" gap={0.5} justifyContent="center" sx={{ 
+                              flexDirection: { xs: 'row', sm: 'row' },
+                              '& .MuiButton-root': {
+                                minWidth: { xs: 'auto', sm: 'auto' },
+                                fontSize: '0.7rem',
+                                py: { xs: 0.5, sm: 0.5 },
+                                px: { xs: 1, sm: 1 }
+                              }
+                            }}>
+                              <Button 
+                                variant="outlined" 
+                                size="small"
+                                onClick={() => handleDealCost(item.vin)}
+                              >
+                                DealCost
+                              </Button>
+                              <Button 
+                                variant="outlined" 
+                                size="small" 
+                                onClick={() => handleOpen(item.vin)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleDeleteCar(item.vin)}
+                                size="small"
+                                sx={{ color: '#d32f2f' }}
+                              >
+                                Delete
+                              </Button>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    <TableRow sx={{ backgroundColor: '#e0f7fa', fontWeight: 'bold' }}>
+                      <TableCell colSpan={9} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        Totals:
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}
+                      </TableCell>
+                      <TableCell colSpan={2}></TableCell>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
+                        {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}
+                      </TableCell>
+                      {(filterSold === 'sold' || filterSold === 'all') ? (
+                        <>
+                          <TableCell></TableCell>
+                          <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                            {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                              const salePrice = Number(item.sale_price) || 0;
+                              return sum + salePrice;
+                            }, 0))}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                            {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_status === 'sold' ? item.sale_price - (item.purchase_price + (reconditioningCosts[item.vin] || 0)) : 0), 0))}
+                          </TableCell>
+                          <TableCell></TableCell>
+                        </>
+                      ) : null}
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        {Math.round(filteredSortedInventory.reduce((sum, item) => sum + calculateDaysInInventory(item), 0) / filteredSortedInventory.length) || 0} days avg
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              )}
             </TableContainer>
           </Box>
 
@@ -1306,6 +1192,76 @@ function Inventory() {
               )}
             </Box>
           </Modal>
+
+          {filterSold === 'sold' && (
+            <Paper
+              elevation={0}
+              sx={{
+                mt: 3,
+                p: 3,
+                borderRadius: 3,
+                background: theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'
+                  : 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,245,245,1) 100%)',
+                boxShadow: theme.palette.mode === 'dark'
+                  ? '0 4px 20px 0 rgba(0,0,0,0.2)'
+                  : '0 4px 20px 0 rgba(0,0,0,0.05)',
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+              }}
+            >
+              <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+                Profit Metrics
+              </Typography>
+
+              <Grid container spacing={3}>
+                {/* Average Profit Per Car */}
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                      Average Profit Per Car
+                    </Typography>
+                    <Typography variant="h4" color="primary">
+                      {formatPrice(calculateAverageProfitPerCar(filteredSortedInventory, reports))}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                {/* Average Profit by Purchaser */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                    Average Profit by Purchaser
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Purchaser</TableCell>
+                          <TableCell align="right">Avg. Profit</TableCell>
+                          <TableCell align="right"># of Cars</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {calculateAverageProfitByPurchaser(filteredSortedInventory, reports)
+                          .sort((a, b) => b.averageProfit - a.averageProfit)
+                          .map((row) => (
+                            <TableRow key={row.purchaser}>
+                              <TableCell>{row.purchaser}</TableCell>
+                              <TableCell align="right" sx={{
+                                color: row.averageProfit >= 0 ? 'success.main' : 'error.main',
+                                fontWeight: 'medium'
+                              }}>
+                                {formatPrice(row.averageProfit)}
+                              </TableCell>
+                              <TableCell align="right">{row.numberOfCars}</TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+              </Grid>
+            </Paper>
+          )}
 
         </Box>
       </Container>

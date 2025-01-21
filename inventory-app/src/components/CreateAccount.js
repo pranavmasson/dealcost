@@ -64,10 +64,17 @@ function CreateAccount() {
       transition={{ duration: 0.5 }}
       style={{
         display: 'flex',
-        height: '100vh',
+        minHeight: '100vh',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(to right, #003973, #E5E5BE)',
+        margin: 0,
+        padding: 0,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
       }}
     >
       <Container
@@ -80,9 +87,12 @@ function CreateAccount() {
           boxShadow: 3,
           borderRadius: 2,
           overflow: 'hidden',
+          margin: { xs: 2, sm: 4 },
+          ml: { xs: 2, sm: 4, md: '20%' },
+          mr: { xs: 2, sm: 4, md: '10%' },
+          width: { md: '80%' },
         }}
       >
-        {/* Left Section with Image */}
         <Box
           sx={{
             flex: 1,
@@ -91,9 +101,7 @@ function CreateAccount() {
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
-        ></Box>
-
-        {/* Right Section with Create Account Form */}
+        />
         <Box
           sx={{
             flex: 1,
@@ -106,108 +114,120 @@ function CreateAccount() {
           <Typography variant="h4" gutterBottom align="center" fontWeight="bold">
             Create an <span style={{ color: '#0056b3' }}>Account</span>
           </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              margin="dense"
+              size="small"
+              label="Username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              size="small"
+              label="Password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              size="small"
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              size="small"
+              label="Company Name"
+              name="company_name"
+              value={formData.company_name}
+              onChange={handleChange}
+              required
+            />
+            <Grid container spacing={1}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
-                  label="Username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Company Name"
-                  name="company_name"
-                  value={formData.company_name}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  required
-                  fullWidth
+                  margin="dense"
+                  size="small"
                   label="Phone Number"
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
+                  margin="dense"
+                  size="small"
                   label="Street Address"
                   name="street_address"
                   value={formData.street_address}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
+                  margin="dense"
+                  size="small"
                   label="City"
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
+                  margin="dense"
+                  size="small"
                   label="State"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
+                  margin="dense"
+                  size="small"
                   label="ZIP Code"
                   name="zip_code"
                   value={formData.zip_code}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={6}>
                 <TextField
-                  required
                   fullWidth
+                  margin="dense"
+                  size="small"
                   label="Country"
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
+                  required
                 />
               </Grid>
             </Grid>
@@ -215,16 +235,16 @@ function CreateAccount() {
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              sx={{ mt: 2, bgcolor: '#1976d2', height: '40px' }}
             >
-              Create Account
+              CREATE ACCOUNT
             </Button>
             {message && (
               <Typography color={message.includes('success') ? 'green' : 'red'} mt={2} align="center">
                 {message}
               </Typography>
             )}
-          </Box>
+          </form>
         </Box>
       </Container>
     </motion.div>

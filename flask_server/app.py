@@ -163,7 +163,8 @@ def insert_vehicle():
             "title_received": vehicle_data.get("title_received", ""),
             "inspection_received": vehicle_data.get("inspection_received", "no"),  # Add inspection field
             "pending_issues": vehicle_data.get("pending_issues", ""),
-            "inspection_status": vehicle_data.get("inspection_status", "")
+            "inspection_status": vehicle_data.get("inspection_status", ""),
+            "purchaser": vehicle_data.get("purchaser", ""),
         }
         result = inventory_collection.insert_one(new_vehicle)
 
@@ -374,6 +375,7 @@ def update_vehicle(vin):
             "inspection_received": vehicle_data.get("inspection_received", "no"),  # Add inspection field
             "closing_statement": vehicle_data.get("closing_statement", ""),
             "pending_issues": vehicle_data.get("pending_issues", ""),
+            "purchaser": vehicle_data.get("purchaser", ""),
         }
 
         # If the car is marked as sold, include the current date
@@ -452,11 +454,11 @@ def get_dashboard_data():
         if not username:
             return jsonify({"error": "Username is required"}), 400
 
-        # Get current date and 30 days ago date
+        # Get current month's start and end dates
         today = datetime.now()
-        thirty_days_ago = today - timedelta(days=30)
+        current_month_start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        print(f"Calculating for date range: {thirty_days_ago.strftime('%m/%d/%Y')} to {today.strftime('%m/%d/%Y')}")
+        print(f"Calculating for current month: {current_month_start.strftime('%B %Y')}")
 
         # Get all inventory and reports
         all_inventory = list(inventory_collection.find({"username": username}))
@@ -468,46 +470,35 @@ def get_dashboard_data():
         for report in all_reports:
             report['_id'] = str(report['_id'])
 
-        # Calculate reconditioning costs for last 30 days (all expenses)
+        # Calculate reconditioning costs for current month
         current_month_reconditioning = 0
         for report in all_reports:
             date_str = report.get('date_occurred', '')
             if date_str:
                 try:
                     report_date = datetime.strptime(date_str, '%m/%d/%Y')
-                    if thirty_days_ago <= report_date <= today:
+                    if report_date.month == today.month and report_date.year == today.year:
                         current_month_reconditioning += float(report.get('cost', 0))
                 except ValueError:
                     continue
 
-        # Calculate profits for cars sold in last 30 days
+        # Calculate profits for cars sold in current month
         current_month_profit = 0
-        print("\nCalculating profits for sold cars:")
         for car in all_inventory:
             if (car.get('sale_status') == 'sold' and 
-                car.get('date_sold') and 
-                car.get('sale_price')):
+                car.get('date_sold')):
                 try:
                     sale_date = datetime.strptime(car.get('date_sold'), '%m/%d/%Y')
-                    if thirty_days_ago <= sale_date <= today:
-                        # Get this specific car's reconditioning costs
+                    if sale_date.month == today.month and sale_date.year == today.year:
                         car_reconditioning = sum(
                             float(report.get('cost', 0))
                             for report in all_reports
                             if report.get('vin') == car.get('vin')
                         )
-                        
-                        # Calculate profit including reconditioning costs
                         sale_price = float(car.get('sale_price', 0))
                         purchase_price = float(car.get('purchase_price', 0))
                         car_profit = sale_price - purchase_price - car_reconditioning
                         current_month_profit += car_profit
-                        
-                        print(f"\nCar VIN: {car.get('vin')}")
-                        print(f"Sale Price: ${sale_price}")
-                        print(f"Purchase Price: ${purchase_price}")
-                        print(f"Reconditioning Costs: ${car_reconditioning}")
-                        print(f"Profit: ${car_profit}")
                 except ValueError:
                     continue
 
@@ -530,19 +521,18 @@ def get_dashboard_data():
 
         response_data = {
             "inventory": all_inventory,
+            "reports": all_reports,
             "total_vehicles": total_vehicles,
             "total_inventory_value": total_inventory_value,
             "current_month_reconditioning_cost": current_month_reconditioning,
             "current_month_profit": current_month_profit,
+            "current_month_name": today.strftime('%B'),  # Add month name
             "total_floor_plan": total_floor_plan,
             "total_dealership": total_dealership,
             "total_consignment": total_consignment,
             "unsold_reconditioning_cost": unsold_reconditioning_cost,
         }
 
-        print(f"\nFinal Calculations:")
-        print(f"Total 30-day reconditioning costs: ${current_month_reconditioning}")
-        print(f"Total 30-day profit from sold cars: ${current_month_profit}")
         return jsonify(response_data), 200
 
     except Exception as e:

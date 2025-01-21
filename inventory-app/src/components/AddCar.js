@@ -25,6 +25,7 @@ function AddCar() {
     color: '',
     purchase_price: '',
     sale_price: '0',
+    purchaser: '',
     sale_type: '',
     finance_type: 'na',
     closing_statement: '',
@@ -349,6 +350,31 @@ function AddCar() {
                     onChange={handleChange}
                     multiline
                     rows={4}
+                  />
+                </Grid>
+
+                {/* Purchaser */}
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Purchaser"
+                    name="purchaser"
+                    value={formData.purchaser}
+                    onChange={handleChange}
+                    fullWidth
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: 'rgba(0, 0, 0, 0.23)',
+                          transition: 'border-color 0.3s',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: 'primary.main',
+                        },
+                      },
+                    }}
                   />
                 </Grid>
 

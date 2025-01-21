@@ -296,28 +296,143 @@ function Home() {
     plugins: {
       legend: {
         display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+        titleFont: {
+          size: 13,
+          weight: 'bold',
+          family: "'Inter', sans-serif"
+        },
+        bodyFont: {
+          size: 12,
+          family: "'Inter', sans-serif"
+        },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          title: function(context) {
+            return context[0].label;
+          },
+          label: function(context) {
+            const value = context.raw;
+            const sign = value >= 0 ? '+' : '';
+            return `Gross Profit: ${sign}$${value.toLocaleString()}`;
+          }
+        }
       }
     },
     scales: {
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
+        border: {
+          display: false
+        },
+        grid: {
+          color: context => context.tick.value === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
+          drawBorder: false
+        },
         ticks: {
-          stepSize: 1
+          padding: 8,
+          font: {
+            size: 11,
+            family: "'Inter', sans-serif"
+          },
+          callback: function(value) {
+            const sign = value >= 0 ? '+' : '';
+            return `${sign}$${value.toLocaleString()}`;
+          }
+        }
+      },
+      x: {
+        border: {
+          display: false
+        },
+        grid: {
+          display: false
+        },
+        ticks: {
+          padding: 8,
+          font: {
+            size: 11,
+            family: "'Inter', sans-serif"
+          }
         }
       }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
     }
+  };
+
+  const getProfitDistributionData = (inventory, reports) => {
+    // Get last 3 months
+    const today = new Date();
+    const months = [];
+    for (let i = 0; i < 3; i++) {
+      const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      months.push({
+        month: month.toLocaleString('default', { month: 'long' }),
+        year: month.getFullYear(),
+        monthNum: month.getMonth()
+      });
+    }
+
+    // Calculate profits for each month
+    const monthlyProfits = months.map(monthData => {
+      const monthProfit = inventory
+        .filter(car => {
+          if (!car.date_sold || car.sale_status !== 'sold') return false;
+          const saleDate = new Date(car.date_sold);
+          return saleDate.getMonth() === monthData.monthNum && 
+                 saleDate.getFullYear() === monthData.year;
+        })
+        .reduce((total, car) => {
+          const carReconditioning = reports
+            .filter(report => report.vin === car.vin)
+            .reduce((sum, report) => sum + parseFloat(report.cost || 0), 0);
+          
+          const salePrice = parseFloat(car.sale_price || 0);
+          const purchasePrice = parseFloat(car.purchase_price || 0);
+          const profit = salePrice - purchasePrice - carReconditioning;
+          return total + profit;
+        }, 0);
+
+      return {
+        label: `${monthData.month} ${monthData.year}`,
+        profit: monthProfit
+      };
+    });
+
+    return {
+      labels: monthlyProfits.map(m => m.label),
+      datasets: [{
+        label: 'Gross Profit',
+        data: monthlyProfits.map(m => m.profit),
+        backgroundColor: monthlyProfits.map(m => 
+          m.profit >= 0 
+            ? 'rgba(76, 175, 80, 0.75)' 
+            : 'rgba(244, 67, 54, 0.75)'
+        ),
+        borderColor: monthlyProfits.map(m => 
+          m.profit >= 0 
+            ? 'rgba(56, 142, 60, 1)' 
+            : 'rgba(211, 47, 47, 1)'
+        ),
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 50,
+        minBarLength: 6
+      }]
+    };
   };
 
   if (loading)
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <CircularProgress size={60} />
-        </motion.div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress />
       </Box>
     );
 
@@ -391,162 +506,180 @@ function Home() {
             ))}
           </Box>
 
-          <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ px: { xs: 0.5, sm: 2 } }}>
-            {[
-              {
-                title: 'Active Inventory',
-                value: `${dashboardData?.total_vehicles || 0} Vehicles`,
-                color: '#2196F3',
-                icon: <InventoryIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Active Inventory Value',
-                value: `$${(dashboardData?.total_inventory_value || 0).toLocaleString()}`,
-                color: '#FF6384',
-                icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Monthly Reconditioning',
-                value: `$${(dashboardData?.current_month_reconditioning_cost || 0).toLocaleString()}`,
-                color: '#4CAF50',
-                icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Monthly Profit',
-                value: `$${(dashboardData?.current_month_profit || 0).toLocaleString()}`,
-                color: '#FFCE56',
-                icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Floor Plan Vehicles',
-                value: dashboardData?.total_floor_plan || 0,
-                color: '#9C27B0',
-                icon: <DirectionsCarIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Dealership Vehicles',
-                value: dashboardData?.total_dealership || 0,
-                color: '#F44336',
-                icon: <StorefrontIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Consignment Vehicles',
-                value: dashboardData?.total_consignment || 0,
-                color: '#795548',
-                icon: <HandshakeIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              },
-              {
-                title: 'Reconditioning for Unsold Inventory',
-                value: `$${(dashboardData?.unsold_reconditioning_cost || 0).toLocaleString()}`,
-                color: '#607D8B',
-                icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-              }
-            ].map((item, index) => (
-              <Grid item xs={6} sm={6} md={3} key={index}>
-                <motion.div variants={itemVariants}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Grid container spacing={2}>
+                {[
+                  {
+                    title: 'Active Inventory',
+                    value: `${dashboardData?.total_vehicles || 0} Vehicles`,
+                    color: '#2196F3',
+                    icon: <InventoryIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Active Inventory Value',
+                    value: `$${(dashboardData?.total_inventory_value || 0).toLocaleString()}`,
+                    color: '#FF6384',
+                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Monthly Reconditioning',
+                    value: `$${(dashboardData?.current_month_reconditioning_cost || 0).toLocaleString()}`,
+                    subtitle: `(${dashboardData?.current_month_name || ''})`,
+                    color: '#4CAF50',
+                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Monthly Profit',
+                    value: `$${(dashboardData?.current_month_profit || 0).toLocaleString()}`,
+                    subtitle: `(${dashboardData?.current_month_name || ''})`,
+                    color: '#FFCE56',
+                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Floor Plan Vehicles',
+                    value: dashboardData?.total_floor_plan || 0,
+                    color: '#9C27B0',
+                    icon: <DirectionsCarIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Dealership Vehicles',
+                    value: dashboardData?.total_dealership || 0,
+                    color: '#F44336',
+                    icon: <StorefrontIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Consignment Vehicles',
+                    value: dashboardData?.total_consignment || 0,
+                    color: '#795548',
+                    icon: <HandshakeIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  },
+                  {
+                    title: 'Reconditioning for Unsold Inventory',
+                    value: `$${(dashboardData?.unsold_reconditioning_cost || 0).toLocaleString()}`,
+                    color: '#607D8B',
+                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                  }
+                ].map((item, index) => (
+                  <Grid item xs={6} sm={6} md={3} key={index}>
+                    <motion.div variants={itemVariants}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          padding: { xs: 1, sm: 1.5, md: 2 },
+                          borderRadius: 2,
+                          background: theme.palette.mode === 'dark' 
+                            ? `linear-gradient(45deg, ${theme.palette.background.paper} 0%, ${item.color}22 100%)`
+                            : `linear-gradient(45deg, #fff 0%, ${item.color}22 100%)`,
+                          border: `1px solid ${item.color}33`,
+                          transition: 'transform 0.3s ease-in-out',
+                          '&:hover': {
+                            transform: 'translateY(-3px)',
+                          },
+                          minHeight: { xs: '90px', sm: '120px' }
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" mb={0.5}>
+                          <Box sx={{ color: item.color }}>
+                            {React.cloneElement(item.icon, { sx: { fontSize: { xs: 20, sm: 24, md: 30 } } })}
+                          </Box>
+                        </Box>
+                        <Typography 
+                          variant="subtitle2" 
+                          color="text.secondary"
+                          sx={{ 
+                            fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.9rem' },
+                            mb: 0.5,
+                            lineHeight: 1.2
+                          }}
+                        >
+                          {item.title}
+                          {item.subtitle && (
+                            <Typography
+                              component="span"
+                              sx={{
+                                fontSize: { xs: '0.55rem', sm: '0.65rem', md: '0.8rem' },
+                                ml: 0.5,
+                                opacity: 0.8
+                              }}
+                            >
+                              {item.subtitle}
+                            </Typography>
+                          )}
+                        </Typography>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 700,
+                            color: item.color,
+                            fontSize: { xs: '0.85rem', sm: '1rem', md: '1.4rem' },
+                            lineHeight: 1.2
+                          }}
+                        >
+                          {item.value}
+                        </Typography>
+                      </Paper>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
                   <Paper
                     elevation={0}
                     sx={{
-                      padding: { xs: 1, sm: 1.5, md: 2 },
-                      borderRadius: 2,
+                      padding: { xs: 2, sm: 3 },
+                      borderRadius: 3,
+                      height: '100%',
                       background: theme.palette.mode === 'dark' 
-                        ? `linear-gradient(45deg, ${theme.palette.background.paper} 0%, ${item.color}22 100%)`
-                        : `linear-gradient(45deg, #fff 0%, ${item.color}22 100%)`,
-                      border: `1px solid ${item.color}33`,
-                      transition: 'transform 0.3s ease-in-out',
-                      '&:hover': {
-                        transform: 'translateY(-3px)',
-                      },
-                      minHeight: { xs: '90px', sm: '120px' }
+                        ? 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'
+                        : 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,245,245,1) 100%)',
+                      boxShadow: theme.palette.mode === 'dark'
+                        ? '0 4px 20px 0 rgba(0,0,0,0.2)'
+                        : '0 4px 20px 0 rgba(0,0,0,0.05)',
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
                     }}
                   >
-                    <Box display="flex" alignItems="center" mb={0.5}>
-                      <Box sx={{ color: item.color }}>
-                        {React.cloneElement(item.icon, { sx: { fontSize: { xs: 20, sm: 24, md: 30 } } })}
-                      </Box>
+                    <Typography variant="h6" gutterBottom>
+                      Inventory Distribution
+                    </Typography>
+                    <Box sx={{ height: 220 }}>
+                      <Pie data={pieData} options={pieOptions} />
                     </Box>
-                    <Typography 
-                      variant="subtitle2" 
-                      color="text.secondary"
-                      sx={{ 
-                        fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.9rem' },
-                        mb: 0.5,
-                        lineHeight: 1.2
-                      }}
-                    >
-                      {item.title}
-                    </Typography>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        fontWeight: 700,
-                        color: item.color,
-                        fontSize: { xs: '0.85rem', sm: '1rem', md: '1.4rem' },
-                        lineHeight: 1.2
-                      }}
-                    >
-                      {item.value}
-                    </Typography>
                   </Paper>
-                </motion.div>
-              </Grid>
-            ))}
+                </Grid>
 
-            <Grid item xs={12} md={6}>
-              <motion.div variants={itemVariants}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    padding: { xs: 1, sm: 1.5, md: 2 },
-                    borderRadius: 2,
-                    height: { xs: '250px', sm: '300px', md: '350px' },
-                    mb: { xs: 1.5, sm: 2 }
-                  }}
-                >
-                  <Typography 
-                    variant="h6" 
-                    gutterBottom 
-                    color="text.secondary"
-                    sx={{ 
-                      fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
-                      mb: { xs: 1, sm: 2 }
+                <Grid item xs={12} md={6}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      padding: { xs: 2, sm: 3 },
+                      borderRadius: 3,
+                      height: '100%',
+                      background: theme.palette.mode === 'dark' 
+                        ? 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'
+                        : 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,245,245,1) 100%)',
+                      boxShadow: theme.palette.mode === 'dark'
+                        ? '0 4px 20px 0 rgba(0,0,0,0.2)'
+                        : '0 4px 20px 0 rgba(0,0,0,0.05)',
+                      border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
                     }}
                   >
-                    Inventory Distribution
-                  </Typography>
-                  <Box sx={{ 
-                    height: { xs: '200px', sm: '250px', md: '300px' },
-                    width: '100%' 
-                  }}>
-                    <Pie data={pieData} options={pieOptions} />
-                  </Box>
-                </Paper>
-              </motion.div>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <motion.div variants={itemVariants}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    padding: { xs: 2, sm: 2 },
-                    borderRadius: 3,
-                    height: { xs: '250px', sm: '300px' }
-                  }}
-                >
-                  <Typography 
-                    variant="h6" 
-                    gutterBottom 
-                    color="text.secondary"
-                    sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' } }}
-                  >
-                    Inventory Price Distribution
-                  </Typography>
-                  <Box sx={{ height: 300 }}>
-                    <Bar data={getPriceDistributionData(dashboardData?.inventory || [])} options={barOptions} />
-                  </Box>
-                </Paper>
-              </motion.div>
+                    <Typography variant="h6" gutterBottom>
+                      Last 3 Months Gross Profit
+                    </Typography>
+                    <Box sx={{ height: 220 }}>
+                      <Bar 
+                        data={getProfitDistributionData(dashboardData?.inventory || [], dashboardData?.reports || [])} 
+                        options={barOptions} 
+                      />
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
             </Grid>
           </Grid>
         </Box>

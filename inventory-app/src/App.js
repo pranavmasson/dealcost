@@ -20,14 +20,16 @@ import { lightTheme, darkTheme } from './theme';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { motion, AnimatePresence } from 'framer-motion';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import HomeIcon from '@mui/icons-material/Home';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -141,6 +143,25 @@ function App() {
                   <>
                     <ListItem 
                       button 
+                      onClick={() => navigate('/home')} 
+                      selected={location.pathname === '/home'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <HomeIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Home
+                      </Typography>
+                    </ListItem>
+
+                    <ListItem 
+                      button 
                       onClick={() => navigate('/add-car')} 
                       selected={location.pathname === '/add-car'}
                       sx={{
@@ -179,25 +200,6 @@ function App() {
 
                     <ListItem 
                       button 
-                      onClick={() => navigate('/home')} 
-                      selected={location.pathname === '/home'}
-                      sx={{
-                        ...menuItemStyle,
-                        flexDirection: 'column',
-                        height: 80,
-                        justifyContent: 'center',
-                        p: 0,
-                        m: 0
-                      }}
-                    >
-                      <DashboardIcon />
-                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-                        Dashboard
-                      </Typography>
-                    </ListItem>
-
-                    <ListItem 
-                      button 
                       onClick={() => navigate('/user-settings')} 
                       selected={location.pathname === '/user-settings'}
                       sx={{
@@ -209,9 +211,9 @@ function App() {
                         m: 0
                       }}
                     >
-                      <SettingsIcon />
+                      <AccountCircleIcon />
                       <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
-                        Settings
+                        My Account
                       </Typography>
                     </ListItem>
 
@@ -235,19 +237,62 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                      <ListItem button onClick={() => navigate('/login')} sx={menuItemStyle}>
-                        <LoginIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                        <ListItemText primary="Login" sx={{ display: open ? 'block' : 'none' }} />
-                      </ListItem>
-                    </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/')}
+                      selected={location.pathname === '/'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <AttachMoneyIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        DealCost
+                      </Typography>
+                    </ListItem>
 
-                    <motion.div whileHover={{ x: 5 }} transition={{ duration: 0.2 }}>
-                      <ListItem button onClick={() => navigate('/create-account')} sx={menuItemStyle}>
-                        <PersonAddIcon sx={{ mr: open ? 2 : 0, color: '#90CAF9' }} />
-                        <ListItemText primary="Create Account" sx={{ display: open ? 'block' : 'none' }} />
-                      </ListItem>
-                    </motion.div>
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/login')}
+                      selected={location.pathname === '/login'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <LoginIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Login
+                      </Typography>
+                    </ListItem>
+
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/create-account')}
+                      selected={location.pathname === '/create-account'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <PersonAddIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Create
+                      </Typography>
+                    </ListItem>
                   </>
                 )}
               </List>

@@ -54,10 +54,17 @@ function Login({ onLogin }) {
       transition={{ duration: 0.5 }}
       style={{
         display: 'flex',
-        height: '100vh',
+        minHeight: '100vh',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(to right, #003973, #E5E5BE)',
+        margin: 0,
+        padding: 0,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
       }}
     >
       <Container
@@ -70,6 +77,10 @@ function Login({ onLogin }) {
           boxShadow: 3,
           borderRadius: 2,
           overflow: 'hidden',
+          margin: { xs: 2, sm: 4 },
+          ml: { xs: 2, sm: 4, md: '20%' },
+          mr: { xs: 2, sm: 4, md: '10%' },
+          width: { md: '80%' },
         }}
       >
         {/* Left Section with Image */}
