@@ -514,27 +514,41 @@ function Home() {
                     title: 'Active Inventory',
                     value: `${dashboardData?.total_vehicles || 0} Vehicles`,
                     color: '#2196F3',
-                    icon: <InventoryIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                    icon: <InventoryIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
+                    onClick: handleViewInventory
                   },
                   {
                     title: 'Active Inventory Value',
                     value: `$${(dashboardData?.total_inventory_value || 0).toLocaleString()}`,
                     color: '#FF6384',
-                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
+                    onClick: handleViewInventory
                   },
                   {
                     title: 'Monthly Reconditioning',
                     value: `$${(dashboardData?.current_month_reconditioning_cost || 0).toLocaleString()}`,
                     subtitle: `(${dashboardData?.current_month_name || ''})`,
                     color: '#4CAF50',
-                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
+                    onClick: () => navigate('/monthly-reconditioning', { 
+                      state: { 
+                        month: dashboardData?.current_month_name,
+                        year: new Date().getFullYear() 
+                      }
+                    })
                   },
                   {
                     title: 'Monthly Profit',
-                    value: `$${(dashboardData?.current_month_profit || 0).toLocaleString()}`,
                     subtitle: `(${dashboardData?.current_month_name || ''})`,
-                    color: '#FFCE56',
-                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                    value: `$${(dashboardData?.current_month_profit || 0).toLocaleString()}`,
+                    color: '#FFB74D',
+                    icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
+                    onClick: () => navigate('/monthly-profits', { 
+                      state: { 
+                        month: dashboardData?.current_month_name,
+                        year: new Date().getFullYear() 
+                      }
+                    })
                   },
                   {
                     title: 'Floor Plan Vehicles',
@@ -558,13 +572,15 @@ function Home() {
                     title: 'Reconditioning for Unsold Inventory',
                     value: `$${(dashboardData?.unsold_reconditioning_cost || 0).toLocaleString()}`,
                     color: '#607D8B',
-                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />
+                    icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
+                    onClick: () => navigate('/unsold-reconditioning')
                   }
                 ].map((item, index) => (
                   <Grid item xs={6} sm={6} md={3} key={index}>
                     <motion.div variants={itemVariants}>
                       <Paper
                         elevation={0}
+                        onClick={item.onClick}
                         sx={{
                           padding: { xs: 1, sm: 1.5, md: 2 },
                           borderRadius: 2,
@@ -573,6 +589,7 @@ function Home() {
                             : `linear-gradient(45deg, #fff 0%, ${item.color}22 100%)`,
                           border: `1px solid ${item.color}33`,
                           transition: 'transform 0.3s ease-in-out',
+                          cursor: item.onClick ? 'pointer' : 'default',
                           '&:hover': {
                             transform: 'translateY(-3px)',
                           },

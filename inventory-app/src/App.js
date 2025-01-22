@@ -30,6 +30,9 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import MonthlyReconditioning from './components/MonthlyReconditioning';
+import UnsoldReconditioning from './components/UnsoldReconditioning';
+import MonthlyProfits from './components/MonthlyProfits';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -357,6 +360,9 @@ function App() {
                 <Route path="/user-settings" element={<UserSettings isDarkMode={isDarkMode} onThemeChange={toggleTheme} />} />
                 <Route path="/edit-car/:vin" element={<EditCar />} /> {/* Route for editing a car */}
                 <Route path="/edit-report/:reportId" element={<EditReport />} />
+                <Route path="/monthly-reconditioning" element={<MonthlyReconditioning />} />
+                <Route path="/unsold-reconditioning" element={<UnsoldReconditioning />} />
+                <Route path="/monthly-profits" element={<MonthlyProfits />} />
               </>
             ) : (
               <Route path="*" element={<Navigate to="/login" />} />

@@ -604,6 +604,139 @@ def get_company_name(username):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/reports/monthly', methods=['GET'])
+def get_monthly_reconditioning():
+    try:
+        username = request.args.get('username')
+        month = request.args.get('month')
+        year = int(request.args.get('year'))
+        
+        if not all([username, month, year]):
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Get all reports for the specified month
+        all_reports = list(reports_collection.find({"username": username}))
+        
+        # Filter reports for the specified month
+        monthly_reconditioning = []
+        for report in all_reports:
+            try:
+                report_date = datetime.strptime(report.get('date_occurred', ''), '%m/%d/%Y')
+                if (report_date.month == datetime.strptime(month, '%B').month and 
+                    report_date.year == year):
+                    
+                    # Get vehicle details for this report
+                    vehicle = inventory_collection.find_one({"vin": report.get('vin')})
+                    if vehicle:
+                        report['year'] = vehicle.get('year')
+                        report['make'] = vehicle.get('make')
+                        report['model'] = vehicle.get('model')
+                    
+                    # Convert ObjectId to string
+                    report['_id'] = str(report['_id'])
+                    monthly_reconditioning.append(report)
+            except ValueError:
+                continue
+
+        return jsonify({
+            "reconditioning": monthly_reconditioning,
+            "total": sum(float(report.get('cost', 0)) for report in monthly_reconditioning)
+        }), 200
+
+    except Exception as e:
+        print(f"Monthly Reconditioning Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reports/unsold', methods=['GET'])
+def get_unsold_reconditioning():
+    try:
+        username = request.args.get('username')
+        
+        if not username:
+            return jsonify({"error": "Missing username parameter"}), 400
+
+        # Get all unsold inventory
+        unsold_inventory = list(inventory_collection.find({
+            "username": username,
+            "sale_status": {"$ne": "sold"}
+        }))
+        
+        # Get all reports for unsold inventory
+        monthly_reconditioning = []
+        for vehicle in unsold_inventory:
+            reports = list(reports_collection.find({
+                "username": username,
+                "vin": vehicle.get("vin")
+            }))
+            
+            for report in reports:
+                report['year'] = vehicle.get('year')
+                report['make'] = vehicle.get('make')
+                report['model'] = vehicle.get('model')
+                report['_id'] = str(report['_id'])
+                monthly_reconditioning.append(report)
+
+        return jsonify({
+            "reconditioning": monthly_reconditioning,
+            "total": sum(float(report.get('cost', 0)) for report in monthly_reconditioning)
+        }), 200
+
+    except Exception as e:
+        print(f"Unsold Reconditioning Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/reports/monthly-profits', methods=['GET'])
+def get_monthly_profits():
+    try:
+        username = request.args.get('username')
+        month = request.args.get('month')
+        year = int(request.args.get('year'))
+        
+        if not all([username, month, year]):
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Get all sold vehicles for the specified month
+        sold_vehicles = list(inventory_collection.find({
+            "username": username,
+            "sale_status": "sold",
+            "$expr": {
+                "$and": [
+                    {"$eq": [{"$month": {"$dateFromString": {"dateString": "$date_sold"}}}, datetime.strptime(month, '%B').month]},
+                    {"$eq": [{"$year": {"$dateFromString": {"dateString": "$date_sold"}}}, year]}
+                ]
+            }
+        }))
+
+        # Calculate reconditioning costs and profits for each vehicle
+        vehicles_with_profits = []
+        for vehicle in sold_vehicles:
+            # Get reconditioning costs
+            reports = list(reports_collection.find({
+                "username": username,
+                "vin": vehicle.get("vin")
+            }))
+            reconditioning_cost = sum(float(report.get('cost', 0)) for report in reports)
+            
+            # Calculate profit
+            sale_price = float(vehicle.get('sale_price', 0))
+            purchase_price = float(vehicle.get('purchase_price', 0))
+            profit = sale_price - purchase_price - reconditioning_cost
+            
+            # Add calculated fields
+            vehicle['reconditioning_cost'] = reconditioning_cost
+            vehicle['profit'] = profit
+            vehicle['_id'] = str(vehicle['_id'])
+            
+            vehicles_with_profits.append(vehicle)
+
+        return jsonify({
+            "vehicles": vehicles_with_profits
+        }), 200
+
+    except Exception as e:
+        print(f"Monthly Profits Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     host = os.getenv("FLASK_HOST", "127.0.0.1")  # Default to localhost for development
     port = int(os.getenv("FLASK_PORT", 5000))    # Default to port 5000
