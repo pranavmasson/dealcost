@@ -44,16 +44,27 @@ function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [error, setError] = useState('');
   const [showSold, setShowSold] = useState(false);
-  const [sortKey, setSortKey] = useState('days_in_inventory');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [keyword, setKeyword] = useState('');
+  const [sortKey, setSortKey] = useState(() => {
+    return localStorage.getItem('inventorySortKey') || 'days_in_inventory';
+  });
+  const [sortOrder, setSortOrder] = useState(() => {
+    return localStorage.getItem('inventorySortOrder') || 'asc';
+  });
+  const [keyword, setKeyword] = useState(() => {
+    return localStorage.getItem('inventoryKeyword') || '';
+  });
   const [reconditioningCosts, setReconditioningCosts] = useState({});
   const tableContainerRef = useRef(null);
 
-  const [filterSold, setFilterSold] = useState('available'); // Default to "all"
-  const [filterMonth, setFilterMonth] = useState(''); // Default to no specific month
-  const [filterYear, setFilterYear] = useState(''); // Default to no specific year
-
+  const [filterSold, setFilterSold] = useState(() => {
+    return localStorage.getItem('inventoryFilterSold') || 'available';
+  });
+  const [filterMonth, setFilterMonth] = useState(() => {
+    return localStorage.getItem('inventoryFilterMonth') || '';
+  });
+  const [filterYear, setFilterYear] = useState(() => {
+    return localStorage.getItem('inventoryFilterYear') || '';
+  });
 
   const [open, setOpen] = useState(false); // Manage modal visibility
   const [selectedVin, setSelectedVin] = useState(null); // Track selected VIN
@@ -69,6 +80,23 @@ function Inventory() {
 
   const theme = useTheme();
   const [reports, setReports] = useState([]);
+
+  const [filterState, setFilterState] = useState(() => {
+    const savedState = localStorage.getItem('inventoryFilterState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      return parsed;
+    }
+    return {
+      keyword: '',
+      filterSold: 'available',
+      filterMonth: '',
+      filterYear: '',
+      sortKey: 'days_in_inventory',
+      sortOrder: 'asc',
+      isControlsExpanded: false
+    };
+  });
 
   const handleOpenManualEntry = (vin) => {
     setManualEntryVin(vin);
@@ -533,26 +561,25 @@ function Inventory() {
     handleViewDeal(vin); // Assuming you want to use the same handler as the reconditioning cost click
   };
 
-  // Add these calculation functions
-  const calculateAverageProfitPerCar = (inventory, reports) => {
-    if (!inventory.length) return 0;
+  const calculateAverageProfitPerCar = (inventory, reports, reconditioningCosts) => {
+    const soldCars = inventory.filter(car => car.sale_status === 'sold');
+    if (!soldCars.length) return 0;
     
-    const totalProfit = inventory.reduce((sum, car) => {
-      const carReconditioning = reports
-        .filter(report => report.vin === car.vin)
-        .reduce((total, report) => total + parseFloat(report.cost || 0), 0);
-      
+    const totalProfit = soldCars.reduce((sum, car) => {
+      const reconditioningCost = reconditioningCosts[car.vin] || 0;
       const salePrice = parseFloat(car.sale_price || 0);
       const purchasePrice = parseFloat(car.purchase_price || 0);
-      const profit = salePrice - purchasePrice - carReconditioning;
+      const profit = salePrice - purchasePrice - reconditioningCost;
       return sum + profit;
     }, 0);
 
-    return totalProfit / inventory.length;
+    return totalProfit / soldCars.length;
   };
 
-  const calculateAverageProfitByPurchaser = (inventory, reports) => {
-    const purchaserProfits = inventory.reduce((acc, car) => {
+  const calculateAverageProfitByPurchaser = (inventory, reports, reconditioningCosts) => {
+    const soldCars = inventory.filter(car => car.sale_status === 'sold');
+    
+    const purchaserProfits = soldCars.reduce((acc, car) => {
       const purchaser = car.purchaser || 'Unknown';
       if (!acc[purchaser]) {
         acc[purchaser] = {
@@ -561,13 +588,10 @@ function Inventory() {
         };
       }
 
-      const carReconditioning = reports
-        .filter(report => report.vin === car.vin)
-        .reduce((total, report) => total + parseFloat(report.cost || 0), 0);
-      
+      const reconditioningCost = reconditioningCosts[car.vin] || 0;
       const salePrice = parseFloat(car.sale_price || 0);
       const purchasePrice = parseFloat(car.purchase_price || 0);
-      const profit = salePrice - purchasePrice - carReconditioning;
+      const profit = salePrice - purchasePrice - reconditioningCost;
 
       acc[purchaser].totalProfit += profit;
       acc[purchaser].count += 1;
@@ -596,6 +620,68 @@ function Inventory() {
     };
 
     fetchReports();
+  }, []);
+
+  const splitHeaderText = (text) => {
+    if (text === 'Reconditioning Cost') return 'Reconditioning\nCost';
+    if (text.length <= 12) return text;
+    
+    const words = text.split(' ');
+    let firstLine = '';
+    let secondLine = '';
+    
+    if (words.length === 1) {
+      const midpoint = Math.ceil(text.length / 2);
+      return `${text.slice(0, midpoint)}\n${text.slice(midpoint)}`;
+    }
+    
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      if (firstLine.length + word.length <= 12 && firstLine.length <= secondLine.length) {
+        firstLine += (firstLine ? ' ' : '') + word;
+      } else {
+        secondLine += (secondLine ? ' ' : '') + word;
+      }
+    }
+    
+    return `${firstLine}\n${secondLine}`;
+  };
+
+  useEffect(() => {
+    const currentState = {
+      keyword,
+      filterSold,
+      filterMonth,
+      filterYear,
+      sortKey,
+      sortOrder,
+      isControlsExpanded
+    };
+    localStorage.setItem('inventoryFilterState', JSON.stringify(currentState));
+  }, [keyword, filterSold, filterMonth, filterYear, sortKey, sortOrder, isControlsExpanded]);
+
+  // Save filter states whenever they change
+  useEffect(() => {
+    localStorage.setItem('inventoryKeyword', keyword);
+    localStorage.setItem('inventoryFilterSold', filterSold);
+    localStorage.setItem('inventoryFilterMonth', filterMonth);
+    localStorage.setItem('inventoryFilterYear', filterYear);
+    localStorage.setItem('inventorySortKey', sortKey);
+    localStorage.setItem('inventorySortOrder', sortOrder);
+  }, [keyword, filterSold, filterMonth, filterYear, sortKey, sortOrder]);
+
+  // Clear filters only when navigating away from inventory (not to view-deal)
+  useEffect(() => {
+    return () => {
+      if (!window.location.pathname.includes('/view-deal')) {
+        localStorage.removeItem('inventoryKeyword');
+        localStorage.removeItem('inventoryFilterSold');
+        localStorage.removeItem('inventoryFilterMonth');
+        localStorage.removeItem('inventoryFilterYear');
+        localStorage.removeItem('inventorySortKey');
+        localStorage.removeItem('inventorySortOrder');
+      }
+    };
   }, []);
 
   return (
@@ -660,6 +746,31 @@ function Inventory() {
                     flexDirection: { xs: 'column', md: 'row' },
                   }}
                 >
+                  {/* Search Group - Moved before Status */}
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 1, 
+                      display: 'flex', 
+                      gap: 1, 
+                      alignItems: 'center',
+                      bgcolor: 'rgba(0, 32, 96, 0.03)',
+                      borderRadius: 2,
+                      flexGrow: 1
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
+                      Search:
+                    </Typography>
+                    <TextField 
+                      placeholder="Search Keyword" 
+                      value={keyword} 
+                      onChange={(e) => setKeyword(e.target.value)}
+                      size="small"
+                      fullWidth
+                    />
+                  </Paper>
+
                   {/* Status Filters Group */}
                   <Paper 
                     elevation={0} 
@@ -732,31 +843,6 @@ function Inventory() {
                         </MenuItem>
                       ))}
                     </Select>
-                  </Paper>
-
-                  {/* Search Group */}
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 1, 
-                      display: 'flex', 
-                      gap: 1, 
-                      alignItems: 'center',
-                      bgcolor: 'rgba(0, 32, 96, 0.03)',
-                      borderRadius: 2,
-                      flexGrow: 1
-                    }}
-                  >
-                    <Typography variant="subtitle2" sx={{ color: 'primary.main', whiteSpace: 'nowrap' }}>
-                      Search:
-                    </Typography>
-                    <TextField 
-                      placeholder="Search Keyword" 
-                      value={keyword} 
-                      onChange={(e) => setKeyword(e.target.value)}
-                      size="small"
-                      fullWidth
-                    />
                   </Paper>
 
                   {/* Sort Group */}
@@ -910,8 +996,8 @@ function Inventory() {
                 '& .MuiTableCell-head': {
                   fontSize: '0.8rem',
                   fontWeight: 'bold',
-                  height: '48px',
-                  padding: '8px 6px',
+                  height: '70px',
+                  padding: '4px 6px',
                   backgroundColor: 'rgb(0, 32, 96) !important',
                   color: 'white',
                   position: 'sticky',
@@ -946,35 +1032,58 @@ function Inventory() {
               ) : (
                 <Table stickyHeader>
                   <TableHead>
-                    <TableRow>
+                    <TableRow sx={{ 
+                      '& th': { 
+                        backgroundColor: '#2f4050 !important',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        whiteSpace: 'pre-line',
+                        height: '70px',
+                        lineHeight: 1.2,
+                        padding: '4px 6px',
+                        '& .MuiBox-root': {
+                          minHeight: '50px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          textAlign: 'center',
+                          margin: '0 auto',
+                          width: '100%'
+                        }
+                      }
+                    }}>
                       {/* Common columns that always show */}
-                      <TableCell>Days in Inventory</TableCell>
-                      <TableCell>Purchase Date</TableCell>
-                      <TableCell>Year</TableCell>
-                      <TableCell>Make</TableCell>
-                      <TableCell>Model</TableCell>
-                      <TableCell>Trim</TableCell>
-                      <TableCell>Mileage</TableCell>
-                      <TableCell>Color</TableCell>
-                      <TableCell>VIN</TableCell>
-                      <TableCell>Purchase Price</TableCell>
-                      <TableCell>Title Received?</TableCell>
-                      <TableCell>Inspection Completed?</TableCell>
-                      <TableCell>Reconditioning Cost</TableCell>
-                      <TableCell>Total Cost</TableCell>
-                      <TableCell>Purchaser</TableCell>
+                      <TableCell><Box>{splitHeaderText('Days in Inventory')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Purchase Date')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Year')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Make')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Model')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Trim')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Mileage')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Color')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('VIN')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Purchase Price')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Title')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Inspection')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Posted Online')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Reconditioning Cost')}</Box></TableCell>
+                      <TableCell><Box>{splitHeaderText('Total Cost')}</Box></TableCell>
+                      {(filterSold === 'sold' || filterSold === 'all') && (
+                        <TableCell><Box>{splitHeaderText('Purchaser')}</Box></TableCell>
+                      )}
+                      <TableCell><Box>{splitHeaderText('Pending Issues')}</Box></TableCell>
 
                       {/* Additional columns for sold/all vehicles */}
                       {(filterSold === 'sold' || filterSold === 'all') && (
                         <>
-                          <TableCell>Date Sold</TableCell>
-                          <TableCell>Sale Price</TableCell>
-                          <TableCell>Profit</TableCell>
-                          <TableCell>Closing Statement</TableCell>
+                          <TableCell><Box>{splitHeaderText('Date Sold')}</Box></TableCell>
+                          <TableCell><Box>{splitHeaderText('Sale Price')}</Box></TableCell>
+                          <TableCell><Box>{splitHeaderText('Profit')}</Box></TableCell>
+                          <TableCell><Box>{splitHeaderText('Closing Statement')}</Box></TableCell>
                         </>
                       )}
                       
-                      <TableCell>Actions</TableCell>
+                      <TableCell><Box>{splitHeaderText('Actions')}</Box></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1019,6 +1128,16 @@ function Inventory() {
                           </TableCell>
                           <TableCell>
                             <Typography
+                              sx={{
+                                color: item.posted_online === "posted" ? 'success.main' : 'error.main',
+                                fontWeight: 'medium'
+                              }}
+                            >
+                              {item.posted_online === "posted" ? 'Posted' : 'Not Posted'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography
                               variant="body2"
                               color="primary"
                               sx={{ 
@@ -1033,7 +1152,25 @@ function Inventory() {
                             </Typography>
                           </TableCell>
                           <TableCell>{formatPrice(totalCost)}</TableCell>
-                          <TableCell>{item.purchaser || 'N/A'}</TableCell>
+                          {(filterSold === 'sold' || filterSold === 'all') && (
+                            <TableCell>{item.purchaser || 'N/A'}</TableCell>
+                          )}
+                          <TableCell>
+                            <Tooltip title={item.pending_issues || 'N/A'} arrow>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  maxWidth: 200,
+                                  color: item.pending_issues ? 'error.main' : 'inherit'
+                                }}
+                              >
+                                {item.pending_issues || 'N/A'}
+                              </Typography>
+                            </Tooltip>
+                          </TableCell>
                           {(filterSold === 'sold' || filterSold === 'all') && (
                             <>
                               <TableCell>{item.date_sold || 'N/A'}</TableCell>
@@ -1098,37 +1235,41 @@ function Inventory() {
                       );
                     })}
                     <TableRow sx={{ backgroundColor: '#e0f7fa', fontWeight: 'bold' }}>
-                      <TableCell colSpan={9} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
+                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        {Math.round(filteredSortedInventory.reduce((sum, item) => sum + calculateDaysInInventory(item), 0) / filteredSortedInventory.length) || 0} days avg
+                      </TableCell>
+                      <TableCell colSpan={8} sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                         Totals:
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                         {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}
                       </TableCell>
                       <TableCell colSpan={2}></TableCell>
+                      <TableCell></TableCell>
                       <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                         {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                         {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.purchase_price + (reconditioningCosts[item.vin] || 0)), 0))}
                       </TableCell>
-                      {(filterSold === 'sold' || filterSold === 'all') ? (
+                      {(filterSold === 'sold' || filterSold === 'all') && (
                         <>
                           <TableCell></TableCell>
-                          <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                             {formatPrice(filteredSortedInventory.reduce((sum, item) => {
                               const salePrice = Number(item.sale_price) || 0;
                               return sum + salePrice;
                             }, 0))}
                           </TableCell>
-                          <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>
                             {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (item.sale_status === 'sold' ? item.sale_price - (item.purchase_price + (reconditioningCosts[item.vin] || 0)) : 0), 0))}
                           </TableCell>
                           <TableCell></TableCell>
                         </>
-                      ) : null}
-                      <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>
-                        {Math.round(filteredSortedInventory.reduce((sum, item) => sum + calculateDaysInInventory(item), 0) / filteredSortedInventory.length) || 0} days avg
-                      </TableCell>
+                      )}
+                      <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -1221,7 +1362,7 @@ function Inventory() {
                       Average Profit Per Car
                     </Typography>
                     <Typography variant="h4" color="primary">
-                      {formatPrice(calculateAverageProfitPerCar(filteredSortedInventory, reports))}
+                      {formatPrice(calculateAverageProfitPerCar(filteredSortedInventory, reports, reconditioningCosts))}
                     </Typography>
                   </Box>
                 </Grid>
@@ -1241,7 +1382,7 @@ function Inventory() {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {calculateAverageProfitByPurchaser(filteredSortedInventory, reports)
+                        {calculateAverageProfitByPurchaser(filteredSortedInventory, reports, reconditioningCosts)
                           .sort((a, b) => b.averageProfit - a.averageProfit)
                           .map((row) => (
                             <TableRow key={row.purchaser}>

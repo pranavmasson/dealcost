@@ -33,7 +33,8 @@ function AddCar() {
     purchase_date: new Date(), // Initialize as Date object for DatePicker
     title_received: 'na', // New field for "Title Received?"
     inspection_received: 'no', // New field with default value
-    pending_issues: '' // Added "Pending Issues" field
+    pending_issues: '', // Added "Pending Issues" field
+    posted_online: false,
   });
   const [message, setMessage] = useState('');
 
@@ -75,7 +76,7 @@ function AddCar() {
         },
         body: JSON.stringify(vehicleData),
       });
-      
+
       if (response.ok) {
         localStorage.setItem('showAddSuccess', 'true');
         navigate('/inventory');
@@ -124,7 +125,7 @@ function AddCar() {
             sx={{
               p: 4,
               borderRadius: 3,
-              background: theme => theme.palette.mode === 'dark' 
+              background: theme => theme.palette.mode === 'dark'
                 ? 'rgba(255, 255, 255, 0.05)'
                 : 'rgba(255, 255, 255, 0.9)',
               backdropFilter: 'blur(10px)',
@@ -276,19 +277,20 @@ function AddCar() {
                 </Grid>
                 <Grid item xs={12} sm={4}>
                   <FormControl fullWidth variant="outlined">
-                    <InputLabel id="finance-type-label">Finance Type</InputLabel>
+                    <InputLabel id="finance-type-label">Sale Type</InputLabel>
                     <Select
                       labelId="finance-type-label"
-                      label="Finance Type"
+                      label="Sale Type"
                       name="finance_type"
                       value={formData.finance_type}
                       onChange={handleChange}
                       required
                     >
-                      <MenuItem value="na">N/A</MenuItem>
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="finance">Finance</MenuItem>
+                      <MenuItem value="bph">BPH</MenuItem>
                       <MenuItem value="outside finance">Outside Finance</MenuItem>
+                      <MenuItem value="na">N/A</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -326,6 +328,24 @@ function AddCar() {
                     >
                       <MenuItem value="yes">Yes</MenuItem>
                       <MenuItem value="no">No</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Posted Online Dropdown */}
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth variant="outlined">
+                    <InputLabel id="posted-online-label">Posted Online?</InputLabel>
+                    <Select
+                      labelId="posted-online-label"
+                      label="Posted Online?"
+                      name="posted_online"
+                      value={formData.posted_online}
+                      onChange={handleChange}
+                      required
+                    >
+                      <MenuItem value={true}>Posted</MenuItem>
+                      <MenuItem value={false}>Not Posted</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>

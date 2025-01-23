@@ -48,6 +48,7 @@ function EditCar({ open, onClose, vin }) {
     closing_statement: '',
     pending_issues: '',
     date_sold: null,
+    posted_online: "not posted",
   });
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,7 @@ function EditCar({ open, onClose, vin }) {
             purchase_date: data.purchase_date ? new Date(data.purchase_date) : new Date(),
             date_sold: data.date_sold ? new Date(data.date_sold) : null,
             pending_issues: data.pending_issues || '',
+            posted_online: data.posted_online || 'not posted',
           });
         } else {
           setMessage('Failed to load car details');
@@ -106,26 +108,37 @@ function EditCar({ open, onClose, vin }) {
     setMessage('');
 
     try {
+      const username = localStorage.getItem('username');
+      const requestData = {
+        ...formData,
+        username,
+        purchase_date: formatDate(formData.purchase_date),
+        date_sold: formData.date_sold ? formatDate(formData.date_sold) : null,
+      };
+
+      console.log('Sending update request:', {
+        vin,
+        username,
+        data: requestData
+      });
+
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/update_vehicle/${vin}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          purchase_date: formatDate(formData.purchase_date),
-          date_sold: formData.date_sold ? formatDate(formData.date_sold) : null,
-        }),
+        body: JSON.stringify(requestData),
       });
+
+      const data = await response.json();
+      console.log('Server response:', data);
 
       if (response.ok) {
         setMessage('Car updated successfully!');
       } else {
-        const data = await response.json();
         console.error('Server error:', data.error);
       }
       
-      // Always close and navigate back, even if there were no changes
       setTimeout(() => {
         onClose();
         navigate('/inventory', { state: { refresh: true } });
@@ -134,7 +147,6 @@ function EditCar({ open, onClose, vin }) {
       console.error('Error updating car:', error);
       setMessage('An error occurred while updating the car');
       
-      // Even on error, close and navigate back
       setTimeout(() => {
         onClose();
         navigate('/inventory', { state: { refresh: true } });
@@ -557,6 +569,36 @@ function EditCar({ open, onClose, vin }) {
                           </Grid>
                           <Grid item xs={12} sm={4}>
                             <FormControl fullWidth>
+                              <InputLabel>Sale Type</InputLabel>
+                              <Select
+                                name="finance_type"
+                                value={formData.finance_type}
+                                onChange={handleChange}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                                      transition: 'border-color 0.3s',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: 'primary.main',
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="cash">Cash</MenuItem>
+                                <MenuItem value="finance">Finance</MenuItem>
+                                <MenuItem value="bph">BPH</MenuItem>
+                                <MenuItem value="outside finance">Outside Finance</MenuItem>
+                                <MenuItem value="na">N/A</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth>
                               <InputLabel>Title Received?</InputLabel>
                               <Select
                                 name="title_received"
@@ -577,8 +619,8 @@ function EditCar({ open, onClose, vin }) {
                                   },
                                 }}
                               >
-                                <MenuItem value="yes">Yes</MenuItem>
-                                <MenuItem value="no">No</MenuItem>
+                                <MenuItem value={true}>Yes</MenuItem>
+                                <MenuItem value={false}>No</MenuItem>
                                 <MenuItem value="na">N/A</MenuItem>
                               </Select>
                             </FormControl>
@@ -684,6 +726,22 @@ function EditCar({ open, onClose, vin }) {
                               control={<Switch checked={formData.sale_status === 'sold'} onChange={handleToggleSaleStatus} />}
                               label={formData.sale_status === 'sold' ? 'Sold' : 'Available'}
                             />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth variant="outlined">
+                              <InputLabel id="posted-online-label">Posted Online?</InputLabel>
+                              <Select
+                                labelId="posted-online-label"
+                                label="Posted Online?"
+                                name="posted_online"
+                                value={formData.posted_online}
+                                onChange={handleChange}
+                                required
+                              >
+                                <MenuItem value="posted">Posted</MenuItem>
+                                <MenuItem value="not posted">Not Posted</MenuItem>
+                              </Select>
+                            </FormControl>
                           </Grid>
                         </Grid>
                       </Box>

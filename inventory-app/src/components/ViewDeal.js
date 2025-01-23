@@ -439,6 +439,15 @@ function ViewDeal() {
     cutout: '65%'
   };
 
+  const handleBackToInventory = () => {
+    navigate('/inventory', { 
+      state: { 
+        preserveFilters: true,
+        refresh: false 
+      }
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -456,7 +465,7 @@ function ViewDeal() {
             <Button
               variant="outlined"
               startIcon={<ArrowBackIcon />}
-              onClick={() => navigate('/inventory')}
+              onClick={handleBackToInventory}
               sx={{
                 mb: 2,
                 color: 'primary.main',

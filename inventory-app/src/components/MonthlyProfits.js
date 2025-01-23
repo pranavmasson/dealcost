@@ -125,7 +125,7 @@ function MonthlyProfits() {
                     >
                       ${vehicle.profit.toLocaleString()}
                     </TableCell>
-                    <TableCell>{vehicle.sale_type}</TableCell>
+                    <TableCell>{vehicle.finance_type}</TableCell>
                     <TableCell>{vehicle.purchaser}</TableCell>
                   </TableRow>
                 ))}

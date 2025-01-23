@@ -368,10 +368,10 @@ function Home() {
   };
 
   const getProfitDistributionData = (inventory, reports) => {
-    // Get last 3 months
+    // Get last 6 months (changed from 3)
     const today = new Date();
     const months = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {  // Changed from 3 to 6
       const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
       months.push({
         month: month.toLocaleString('default', { month: 'long' }),
@@ -546,18 +546,18 @@ function Home() {
                     onClick: () => navigate('/monthly-profits', { 
                       state: { 
                         month: dashboardData?.current_month_name,
-                        year: new Date().getFullYear() 
+                        year: new Date().getFullYear()
                       }
                     })
                   },
                   {
-                    title: 'Floor Plan Vehicles',
+                    title: 'Vehicles on Floor Plan',
                     value: dashboardData?.total_floor_plan || 0,
                     color: '#9C27B0',
                     icon: <DirectionsCarIcon sx={{ fontSize: 40, opacity: 0.7 }} />
                   },
                   {
-                    title: 'Dealership Vehicles',
+                    title: 'Dealer Owned Vehicles',
                     value: dashboardData?.total_dealership || 0,
                     color: '#F44336',
                     icon: <StorefrontIcon sx={{ fontSize: 40, opacity: 0.7 }} />
@@ -686,7 +686,7 @@ function Home() {
                     }}
                   >
                     <Typography variant="h6" gutterBottom>
-                      Last 3 Months Gross Profit
+                      Last 6 Months Gross Profit
                     </Typography>
                     <Box sx={{ height: 220 }}>
                       <Bar 

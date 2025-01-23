@@ -165,6 +165,7 @@ def insert_vehicle():
             "pending_issues": vehicle_data.get("pending_issues", ""),
             "inspection_status": vehicle_data.get("inspection_status", ""),
             "purchaser": vehicle_data.get("purchaser", ""),
+            "posted_online": vehicle_data.get("posted_online", "")
         }
         result = inventory_collection.insert_one(new_vehicle)
 
@@ -359,11 +360,21 @@ def update_user(user_id):
 def update_vehicle(vin):
     try:
         vehicle_data = request.json
+        username = vehicle_data.get("username")
         
-        # Prepare the update data
+        print(f"Updating vehicle: VIN={vin}, Username={username}")  # Debug log
+        
+        # First check if the vehicle exists
+        existing_vehicle = inventory_collection.find_one({"vin": vin, "username": username})
+        if not existing_vehicle:
+            print(f"Vehicle not found: VIN={vin}, Username={username}")  # Debug log
+            return jsonify({"error": "Vehicle not found"}), 404
+
+        # Prepare update data
         update_fields = {
             "make": vehicle_data["make"],
             "model": vehicle_data["model"],
+            "trim": vehicle_data.get("trim", ""),
             "year": vehicle_data["year"],
             "mileage": vehicle_data["mileage"],
             "color": vehicle_data["color"],
@@ -372,28 +383,37 @@ def update_vehicle(vin):
             "sale_status": vehicle_data["sale_status"],
             "purchase_date": vehicle_data.get("purchase_date", ""),
             "title_received": vehicle_data.get("title_received", ""),
-            "inspection_received": vehicle_data.get("inspection_received", "no"),  # Add inspection field
+            "inspection_received": vehicle_data.get("inspection_received", "no"),
             "closing_statement": vehicle_data.get("closing_statement", ""),
             "pending_issues": vehicle_data.get("pending_issues", ""),
             "purchaser": vehicle_data.get("purchaser", ""),
+            "posted_online": "posted" if vehicle_data.get("posted_online") == "posted" else "not posted",
+            "finance_type": vehicle_data.get("finance_type", "na"),
+            "sale_type": vehicle_data.get("sale_type", "na"),
         }
 
-        # If the car is marked as sold, include the current date
+        # Handle date_sold separately
         if vehicle_data["sale_status"] == "sold":
             update_fields["date_sold"] = vehicle_data.get("date_sold", "")
         else:
             update_fields["date_sold"] = ""
 
-        # Update the vehicle in the database
+        print(f"Update fields: {update_fields}")  # Debug log
+
+        # Update the vehicle
         result = inventory_collection.update_one(
-            {"vin": vin},
+            {"vin": vin, "username": username},
             {"$set": update_fields}
         )
+
+        print(f"Update result: modified_count={result.modified_count}")  # Debug log
+
         if result.modified_count == 0:
             return jsonify({"error": "Vehicle not updated"}), 404
 
         return jsonify({"message": "Vehicle updated successfully"}), 200
     except Exception as e:
+        print(f"Error updating vehicle: {str(e)}")  # Debug log
         return jsonify({"error": str(e)}), 500
 
 
