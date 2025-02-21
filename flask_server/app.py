@@ -23,6 +23,7 @@ inventory_collection = db.inventory
 reports_collection = db.reports
 accounting_collection = db.accounting
 tasks_collection = db.tasks
+deposits_collection = db.deposits
 
 @app.route('/')
 def index():
@@ -960,6 +961,59 @@ def delete_expense(expense_id):
         if result.deleted_count:
             return jsonify({"message": "Expense deleted successfully"}), 200
         return jsonify({"error": "Expense not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/deposits', methods=['GET'])
+def get_deposits():
+    try:
+        username = request.args.get('username')
+        deposits = list(deposits_collection.find({'username': username}))
+        for deposit in deposits:
+            deposit['_id'] = str(deposit['_id'])
+        return jsonify({'deposits': deposits}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/deposits', methods=['POST'])
+def add_deposit():
+    try:
+        deposit_data = request.json
+        result = deposits_collection.insert_one(deposit_data)
+        return jsonify({"message": "Deposit added successfully", "id": str(result.inserted_id)}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/deposits/<deposit_id>', methods=['PUT'])
+def update_deposit(deposit_id):
+    try:
+        if not ObjectId.is_valid(deposit_id):
+            return jsonify({"error": "Invalid deposit ID format"}), 400
+            
+        deposit_data = request.json
+        
+        if '_id' in deposit_data:
+            del deposit_data['_id']
+            
+        result = deposits_collection.update_one(
+            {"_id": ObjectId(deposit_id)},
+            {"$set": deposit_data}
+        )
+        
+        if result.modified_count:
+            return jsonify({"message": "Deposit updated successfully"}), 200
+        return jsonify({"error": "Deposit not found"}), 404
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/deposits/<deposit_id>', methods=['DELETE'])
+def delete_deposit(deposit_id):
+    try:
+        result = deposits_collection.delete_one({"_id": ObjectId(deposit_id)})
+        if result.deleted_count:
+            return jsonify({"message": "Deposit deleted successfully"}), 200
+        return jsonify({"error": "Deposit not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

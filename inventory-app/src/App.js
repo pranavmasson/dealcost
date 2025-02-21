@@ -37,6 +37,8 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import Tasks from './components/Tasks';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import Expenses from './components/Expenses';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import Deposits from './components/Deposits';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -264,6 +266,25 @@ function App() {
 
                     <ListItem 
                       button 
+                      onClick={() => navigate('/deposits')} 
+                      selected={location.pathname === '/deposits'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <AccountBalanceIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Deposits
+                      </Typography>
+                    </ListItem>
+
+                    <ListItem 
+                      button 
                       onClick={handleLogout}
                       sx={{
                         ...menuItemStyle,
@@ -407,6 +428,7 @@ function App() {
                 <Route path="/monthly-profits" element={<MonthlyProfits />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/expenses" element={<Expenses />} />
+                <Route path="/deposits" element={<Deposits />} />
               </>
             ) : (
               <Route path="*" element={<Navigate to="/login" />} />

@@ -1119,30 +1119,37 @@ function Inventory() {
                       </TableCell>
                       <TableCell colSpan={8} />
                       <TableCell className="number-cell" sx={{ fontWeight: 'bold' }}>
-                        {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price, 0))}
+                        {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                          const price = parseFloat(item.purchase_price) || 0;
+                          return sum + price;
+                        }, 0))}
                       </TableCell>
                       <TableCell colSpan={4} />
                       <TableCell className="number-cell" sx={{ fontWeight: 'bold' }}>
                         {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + (reconditioningCosts[item.vin] || 0), 0))}
                       </TableCell>
                       <TableCell className="number-cell" sx={{ fontWeight: 'bold' }}>
-                        {formatPrice(filteredSortedInventory.reduce((sum, item) => sum + item.purchase_price + (reconditioningCosts[item.vin] || 0), 0))}
+                        {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                          const purchasePrice = parseFloat(item.purchase_price) || 0;
+                          const reconCost = reconditioningCosts[item.vin] || 0;
+                          return sum + purchasePrice + reconCost;
+                        }, 0))}
                       </TableCell>
                       {filterSold !== 'available' && (
                         <>
                           <TableCell colSpan={3} />
                           <TableCell className="number-cell" sx={{ fontWeight: 'bold' }}>
-                            {formatPrice(filteredSortedInventory.reduce((sum, item) => 
-                              sum + Number(item.sale_price || 0)
-                            , 0))}
+                            {formatPrice(filteredSortedInventory.reduce((sum, item) => {
+                              const salePrice = parseFloat(item.sale_price) || 0;
+                              return sum + salePrice;
+                            }, 0))}
                           </TableCell>
                           <TableCell className="number-cell" sx={{ fontWeight: 'bold' }}>
                             {formatPrice(filteredSortedInventory.reduce((sum, item) => {
-                              if (item.sale_status === 'sold') {
-                                const totalCost = item.purchase_price + (reconditioningCosts[item.vin] || 0);
-                                return sum + ((item.sale_price || 0) - totalCost);
-                              }
-                              return sum;
+                              const purchasePrice = parseFloat(item.purchase_price) || 0;
+                              const reconCost = reconditioningCosts[item.vin] || 0;
+                              const salePrice = parseFloat(item.sale_price) || 0;
+                              return sum + (salePrice - (purchasePrice + reconCost));
                             }, 0))}
                           </TableCell>
                           <TableCell colSpan={2} />
