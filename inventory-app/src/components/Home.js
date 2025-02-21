@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container, Box, Typography, Button, Grid, Paper, CircularProgress,
-  useTheme
+  useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField
 } from '@mui/material';
 import {
   Chart as ChartJS,
@@ -28,6 +28,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import HandshakeIcon from '@mui/icons-material/Handshake';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 // Register ChartJS components
 ChartJS.register(
@@ -37,7 +38,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  ChartDataLabels
 );
 
 function Home() {
@@ -56,6 +58,12 @@ function Home() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showProfit, setShowProfit] = useState(false);
+  const [showGraph, setShowGraph] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordAction, setPasswordAction] = useState('');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -93,6 +101,13 @@ function Home() {
     };
 
     fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    const profitUnlocked = localStorage.getItem('profitUnlocked') === 'true';
+    const graphUnlocked = localStorage.getItem('graphUnlocked') === 'true';
+    setShowProfit(profitUnlocked);
+    setShowGraph(graphUnlocked);
   }, []);
 
   const handleViewInventory = () => navigate('/inventory');
@@ -290,88 +305,11 @@ function Home() {
     };
   };
 
-  const barOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-        titleFont: {
-          size: 13,
-          weight: 'bold',
-          family: "'Inter', sans-serif"
-        },
-        bodyFont: {
-          size: 12,
-          family: "'Inter', sans-serif"
-        },
-        padding: 12,
-        cornerRadius: 8,
-        displayColors: false,
-        callbacks: {
-          title: function(context) {
-            return context[0].label;
-          },
-          label: function(context) {
-            const value = context.raw;
-            const sign = value >= 0 ? '+' : '';
-            return `Gross Profit: ${sign}$${value.toLocaleString()}`;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-        border: {
-          display: false
-        },
-        grid: {
-          color: context => context.tick.value === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
-          drawBorder: false
-        },
-        ticks: {
-          padding: 8,
-          font: {
-            size: 11,
-            family: "'Inter', sans-serif"
-          },
-          callback: function(value) {
-            const sign = value >= 0 ? '+' : '';
-            return `${sign}$${value.toLocaleString()}`;
-          }
-        }
-      },
-      x: {
-        border: {
-          display: false
-        },
-        grid: {
-          display: false
-        },
-        ticks: {
-          padding: 8,
-          font: {
-            size: 11,
-            family: "'Inter', sans-serif"
-          }
-        }
-      }
-    },
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart'
-    }
-  };
-
   const getProfitDistributionData = (inventory, reports) => {
-    // Get last 6 months (changed from 3)
+    // Get last 6 months
     const today = new Date();
     const months = [];
-    for (let i = 0; i < 6; i++) {  // Changed from 3 to 6
+    for (let i = 0; i < 6; i++) {
       const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
       months.push({
         month: month.toLocaleString('default', { month: 'long' }),
@@ -402,7 +340,7 @@ function Home() {
 
       return {
         label: `${monthData.month} ${monthData.year}`,
-        profit: monthProfit
+        profit: Math.round(monthProfit) // Round to whole numbers
       };
     });
 
@@ -427,6 +365,162 @@ function Home() {
         minBarLength: 6
       }]
     };
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const basePlugins = {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: 'rgba(17, 24, 39, 0.95)',
+      titleFont: {
+        size: 13,
+        weight: 'bold',
+        family: "'Inter', sans-serif"
+      },
+      bodyFont: {
+        size: 12,
+        family: "'Inter', sans-serif"
+      },
+      padding: 12,
+      cornerRadius: 8,
+      displayColors: false,
+      callbacks: {
+        title: function(context) {
+          return context[0].label;
+        },
+        label: function(context) {
+          const value = context.raw;
+          return `Gross Profit: ${formatCurrency(value)}`;
+        }
+      }
+    },
+    datalabels: {
+      anchor: 'center',
+      align: 'center',
+      color: '#000',
+      font: {
+        weight: 'bold'
+      },
+      formatter: function(value) {
+        return formatCurrency(value);
+      }
+    }
+  };
+
+  const barOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: basePlugins,
+    scales: {
+      x: {
+        beginAtZero: true,
+        border: {
+          display: false
+        },
+        grid: {
+          color: context => context.tick.value === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
+          drawBorder: false
+        },
+        ticks: {
+          maxRotation: 0,
+          padding: 8,
+          font: {
+            size: 11,
+            weight: 'bold',
+            family: "'Inter', sans-serif"
+          },
+          callback: function(value) {
+            return new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            }).format(value);
+          },
+          stepSize: 20000
+        }
+      },
+      y: {
+        border: {
+          display: false
+        },
+        grid: {
+          display: false
+        },
+        ticks: {
+          padding: 8,
+          font: {
+            size: 11,
+            weight: 'bold',
+            family: "'Inter', sans-serif"
+          }
+        }
+      }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
+    }
+  };
+
+  const handlePasswordSubmit = async () => {
+    try {
+      const storedPassword = localStorage.getItem('password');
+      if (!storedPassword) {
+        setPasswordError('User session not found. Please login again.');
+        return;
+      }
+
+      if (password === storedPassword) {
+        setPasswordModalOpen(false);
+        setPassword('');
+        setPasswordError('');
+        if (passwordAction === 'profit') {
+          setShowProfit(true);
+          localStorage.setItem('profitUnlocked', 'true');
+        } else if (passwordAction === 'graph') {
+          setShowGraph(true);
+          localStorage.setItem('graphUnlocked', 'true');
+        }
+      } else {
+        setPasswordError('Invalid password');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setPasswordError('An error occurred. Please try again.');
+    }
+  };
+
+  const handleProfitClick = () => {
+    if (!showProfit) {
+      setPasswordAction('profit');
+      setPasswordModalOpen(true);
+    } else {
+      navigate('/monthly-profits', {
+        state: {
+          month: dashboardData?.current_month_name,
+          year: new Date().getFullYear()
+        }
+      });
+    }
+  };
+
+  const handleGraphClick = () => {
+    if (!showGraph) {
+      setPasswordAction('graph');
+      setPasswordModalOpen(true);
+    }
   };
 
   if (loading)
@@ -519,14 +613,14 @@ function Home() {
                   },
                   {
                     title: 'Active Inventory Value',
-                    value: `$${(dashboardData?.total_inventory_value || 0).toLocaleString()}`,
+                    value: formatCurrency(dashboardData?.total_inventory_value),
                     color: '#FF6384',
                     icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
                     onClick: handleViewInventory
                   },
                   {
                     title: 'Monthly Reconditioning',
-                    value: `$${(dashboardData?.current_month_reconditioning_cost || 0).toLocaleString()}`,
+                    value: formatCurrency(dashboardData?.current_month_reconditioning_cost),
                     subtitle: `(${dashboardData?.current_month_name || ''})`,
                     color: '#4CAF50',
                     icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
@@ -540,15 +634,12 @@ function Home() {
                   {
                     title: 'Monthly Profit',
                     subtitle: `(${dashboardData?.current_month_name || ''})`,
-                    value: `$${(dashboardData?.current_month_profit || 0).toLocaleString()}`,
+                    value: showProfit 
+                      ? formatCurrency(dashboardData?.current_month_profit)
+                      : '🔒 Click to unlock',
                     color: '#FFB74D',
                     icon: <TrendingUpIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
-                    onClick: () => navigate('/monthly-profits', { 
-                      state: { 
-                        month: dashboardData?.current_month_name,
-                        year: new Date().getFullYear()
-                      }
-                    })
+                    onClick: handleProfitClick
                   },
                   {
                     title: 'Vehicles on Floor Plan',
@@ -570,7 +661,7 @@ function Home() {
                   },
                   {
                     title: 'Reconditioning for Unsold Inventory',
-                    value: `$${(dashboardData?.unsold_reconditioning_cost || 0).toLocaleString()}`,
+                    value: formatCurrency(dashboardData?.unsold_reconditioning_cost),
                     color: '#607D8B',
                     icon: <BuildIcon sx={{ fontSize: 40, opacity: 0.7 }} />,
                     onClick: () => navigate('/unsold-reconditioning')
@@ -672,10 +763,12 @@ function Home() {
                 <Grid item xs={12} md={6}>
                   <Paper
                     elevation={0}
+                    onClick={handleGraphClick}
                     sx={{
                       padding: { xs: 2, sm: 3 },
                       borderRadius: 3,
                       height: '100%',
+                      cursor: 'pointer',
                       background: theme.palette.mode === 'dark' 
                         ? 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'
                         : 'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,245,245,1) 100%)',
@@ -688,11 +781,14 @@ function Home() {
                     <Typography variant="h6" gutterBottom>
                       Last 6 Months Gross Profit
                     </Typography>
-                    <Box sx={{ height: 220 }}>
-                      <Bar 
-                        data={getProfitDistributionData(dashboardData?.inventory || [], dashboardData?.reports || [])} 
-                        options={barOptions} 
-                      />
+                    <Box sx={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {showGraph ? (
+                        <Bar data={getProfitDistributionData(dashboardData?.inventory || [], dashboardData?.reports || [])} options={barOptions} />
+                      ) : (
+                        <Typography variant="h6" color="text.secondary">
+                          Click to view profit data
+                        </Typography>
+                      )}
                     </Box>
                   </Paper>
                 </Grid>
@@ -701,6 +797,74 @@ function Home() {
           </Grid>
         </Box>
       </Container>
+
+      <Dialog 
+        open={passwordModalOpen} 
+        onClose={() => {
+          setPasswordModalOpen(false);
+          setPassword('');
+          setPasswordError('');
+          setPasswordAction('');
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            minWidth: { xs: '90%', sm: '400px' }
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+            Enter Password
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Please enter your password to view profit information
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            type="password"
+            fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={!!passwordError}
+            helperText={passwordError}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handlePasswordSubmit();
+              }
+            }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={() => {
+              setPasswordModalOpen(false);
+              setPassword('');
+              setPasswordError('');
+              setPasswordAction('');
+            }}
+            sx={{ color: 'text.secondary' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handlePasswordSubmit}
+            variant="contained"
+            sx={{
+              bgcolor: 'primary.main',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
     </motion.div>
   );
 }

@@ -36,6 +36,7 @@ function Login({ onLogin }) {
           localStorage.setItem('userToken', data.user_id);
           localStorage.setItem('username', data.user_id);
           localStorage.setItem('company_name', data.company_name);
+          localStorage.setItem('password', formData.password);
 
           onLogin(data.user_id);
           navigate('/home');

@@ -12,10 +12,13 @@ import {
   TableRow,
   CircularProgress,
   alpha,
+  Button,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 function MonthlyProfits() {
   const theme = useTheme();
@@ -24,6 +27,7 @@ function MonthlyProfits() {
   const [soldVehicles, setSoldVehicles] = useState([]);
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const currentYear = new Date().getFullYear();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSoldVehicles = async () => {
@@ -74,6 +78,14 @@ function MonthlyProfits() {
       transition={{ duration: 0.5 }}
     >
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/home')}
+          sx={{ mb: 2, fontSize: '0.7rem' }}
+        >
+          Back to Home
+        </Button>
+        
         <Paper
           elevation={0}
           sx={{

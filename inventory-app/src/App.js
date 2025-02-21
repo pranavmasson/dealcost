@@ -33,6 +33,10 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import MonthlyReconditioning from './components/MonthlyReconditioning';
 import UnsoldReconditioning from './components/UnsoldReconditioning';
 import MonthlyProfits from './components/MonthlyProfits';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import Tasks from './components/Tasks';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import Expenses from './components/Expenses';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -203,6 +207,25 @@ function App() {
 
                     <ListItem 
                       button 
+                      onClick={() => navigate('/tasks')} 
+                      selected={location.pathname === '/tasks'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <AssignmentIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Tasks
+                      </Typography>
+                    </ListItem>
+
+                    <ListItem 
+                      button 
                       onClick={() => navigate('/user-settings')} 
                       selected={location.pathname === '/user-settings'}
                       sx={{
@@ -217,6 +240,25 @@ function App() {
                       <AccountCircleIcon />
                       <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
                         My Account
+                      </Typography>
+                    </ListItem>
+
+                    <ListItem 
+                      button 
+                      onClick={() => navigate('/expenses')} 
+                      selected={location.pathname === '/expenses'}
+                      sx={{
+                        ...menuItemStyle,
+                        flexDirection: 'column',
+                        height: 80,
+                        justifyContent: 'center',
+                        p: 0,
+                        m: 0
+                      }}
+                    >
+                      <AccountBalanceWalletIcon />
+                      <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.7rem' }}>
+                        Admin Costs
                       </Typography>
                     </ListItem>
 
@@ -363,6 +405,8 @@ function App() {
                 <Route path="/monthly-reconditioning" element={<MonthlyReconditioning />} />
                 <Route path="/unsold-reconditioning" element={<UnsoldReconditioning />} />
                 <Route path="/monthly-profits" element={<MonthlyProfits />} />
+                <Route path="/tasks" element={<Tasks />} />
+                <Route path="/expenses" element={<Expenses />} />
               </>
             ) : (
               <Route path="*" element={<Navigate to="/login" />} />

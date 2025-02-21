@@ -21,6 +21,8 @@ db = client.accounts  # Database name: accounts
 users_collection = db.accountsdb
 inventory_collection = db.inventory
 reports_collection = db.reports
+accounting_collection = db.accounting
+tasks_collection = db.tasks
 
 @app.route('/')
 def index():
@@ -755,6 +757,210 @@ def get_monthly_profits():
 
     except Exception as e:
         print(f"Monthly Profits Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/verify-password', methods=['POST', 'OPTIONS'])
+def verify_password():
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        response = app.make_default_options_response()
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+        response.headers.update(headers)
+        return response
+
+    try:
+        data = request.json
+        username = data.get('username')
+        password = data.get('password')
+
+        if not username or not password:
+            return jsonify({"error": "Username and password are required"}), 400
+
+        user = users_collection.find_one({"username": username})
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        if check_password_hash(user["password"], password):
+            return jsonify({"message": "Password verified"}), 200
+        else:
+            return jsonify({"error": "Invalid password"}), 401
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    try:
+        username = request.args.get('username')
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+
+        tasks = list(tasks_collection.find({"username": username}))
+        for task in tasks:
+            task['_id'] = str(task['_id'])
+        
+        return jsonify({"tasks": tasks}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    try:
+        task_data = request.json
+        result = tasks_collection.insert_one(task_data)
+        return jsonify({"message": "Task created successfully", "task_id": str(result.inserted_id)}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tasks/<task_id>/complete', methods=['PUT'])
+def complete_task(task_id):
+    try:
+        data = request.json
+        result = tasks_collection.update_one(
+            {"_id": ObjectId(task_id)},
+            {
+                "$set": {
+                    "status": data.get('status', 'completed'),
+                    "completedDate": data.get('completedDate')
+                }
+            }
+        )
+        
+        if result.modified_count:
+            return jsonify({"message": "Task marked as completed"}), 200
+        return jsonify({"error": "Task not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/tasks/<task_id>/reopen', methods=['PUT'])
+def reopen_task(task_id):
+    try:
+        data = request.json
+        result = tasks_collection.update_one(
+            {"_id": ObjectId(task_id)},
+            {
+                "$set": {
+                    "status": data.get('status', 'pending'),
+                    "completedDate": None
+                }
+            }
+        )
+        
+        if result.modified_count:
+            return jsonify({"message": "Task reopened successfully"}), 200
+        return jsonify({"error": "Task not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/tasks/<task_id>', methods=['PUT'])
+def update_task(task_id):
+    try:
+        data = request.json
+        # Ensure task_id is valid ObjectId
+        if not ObjectId.is_valid(task_id):
+            return jsonify({"error": "Invalid task ID format"}), 400
+            
+        # Remove _id from data if present to avoid modification error
+        if '_id' in data:
+            del data['_id']
+            
+        result = tasks_collection.update_one(
+            {"_id": ObjectId(task_id)},
+            {"$set": data}
+        )
+        
+        if result.modified_count:
+            return jsonify({"message": "Task updated successfully"}), 200
+        return jsonify({"error": "Task not found"}), 404
+    except Exception as e:
+        print(f"Error updating task: {str(e)}")  # Add logging
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/employees', methods=['GET'])
+def get_employees():
+    try:
+        username = request.args.get('username')
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+
+        employees = list(users_collection.find(
+            {"username": username},
+            {"employees": 1}
+        ))
+        
+        if employees and 'employees' in employees[0]:
+            return jsonify({"employees": employees[0]['employees']}), 200
+        return jsonify({"employees": []}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/expenses', methods=['GET'])
+def get_expenses():
+    try:
+        username = request.args.get('username')
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+
+        expenses = list(accounting_collection.find({"username": username}))
+        for expense in expenses:
+            expense['_id'] = str(expense['_id'])
+        
+        return jsonify({"expenses": expenses}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/expenses', methods=['POST'])
+def add_expense():
+    try:
+        expense_data = request.json
+        result = accounting_collection.insert_one(expense_data)
+        return jsonify({"message": "Expense added successfully", "id": str(result.inserted_id)}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/expenses/<expense_id>', methods=['PUT'])
+def update_expense(expense_id):
+    try:
+        if not ObjectId.is_valid(expense_id):
+            return jsonify({"error": "Invalid expense ID format"}), 400
+            
+        expense_data = request.json
+        
+        # Remove _id if present to avoid modification error
+        if '_id' in expense_data:
+            del expense_data['_id']
+            
+        # Validate required fields
+        required_fields = ['description', 'amount', 'date', 'username']
+        if not all(field in expense_data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+            
+        result = accounting_collection.update_one(
+            {"_id": ObjectId(expense_id)},
+            {"$set": expense_data}
+        )
+        
+        if result.modified_count:
+            return jsonify({"message": "Expense updated successfully"}), 200
+        return jsonify({"error": "Expense not found"}), 404
+        
+    except Exception as e:
+        print(f"Error updating expense: {str(e)}")  # Add logging
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/expenses/<expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    try:
+        result = accounting_collection.delete_one({"_id": ObjectId(expense_id)})
+        if result.deleted_count:
+            return jsonify({"message": "Expense deleted successfully"}), 200
+        return jsonify({"error": "Expense not found"}), 404
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":

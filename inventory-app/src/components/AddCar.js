@@ -13,6 +13,15 @@ const formatDate = (date) => {
   return `${month}/${day}/${year}`;
 };
 
+const generateYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let year = 2028; year >= 1980; year--) {
+    years.push(year);
+  }
+  return years;
+};
+
 function AddCar() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -20,20 +29,16 @@ function AddCar() {
     make: '',
     model: '',
     trim: '',
-    year: '20',
+    year: new Date().getFullYear().toString(),
     mileage: '',
     color: '',
     purchase_price: '',
-    sale_price: '0',
     purchaser: '',
-    sale_type: '',
     finance_type: 'na',
-    closing_statement: '',
     sale_status: 'available',
-    purchase_date: new Date(), // Initialize as Date object for DatePicker
-    title_received: 'na', // New field for "Title Received?"
-    inspection_received: 'no', // New field with default value
-    pending_issues: '', // Added "Pending Issues" field
+    purchase_date: new Date(),
+    title_received: 'na',
+    inspection_received: 'no',
     posted_online: false,
   });
   const [message, setMessage] = useState('');
@@ -94,51 +99,46 @@ function AddCar() {
       transition={{ duration: 0.5 }}
     >
       <Container maxWidth="lg">
-        <Box mt={5} mb={8}>
+        <Box mt={2} mb={2}>
           <motion.div
             initial={{ x: -20 }}
             animate={{ x: 0 }}
             transition={{ duration: 0.5 }}
           >
             <Typography
-              variant="h4"
-              component="h1"
-              gutterBottom
+              variant="h5"
               sx={{
                 fontWeight: 800,
                 background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                mb: 4,
+                mb: 2,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2
+                gap: 1
               }}
             >
-              <DirectionsCarIcon sx={{ fontSize: 40 }} />
+              <DirectionsCarIcon sx={{ fontSize: 30 }} />
               Add New Vehicle
             </Typography>
           </motion.div>
 
           <Paper
-            elevation={0}
+            elevation={3}
             sx={{
-              p: 4,
-              borderRadius: 3,
+              p: 2,
+              borderRadius: 2,
               background: theme => theme.palette.mode === 'dark'
                 ? 'rgba(255, 255, 255, 0.05)'
                 : 'rgba(255, 255, 255, 0.9)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
             }}
           >
             <form onSubmit={handleSubmit}>
               <Grid container spacing={2}>
-                {/* Vehicle Details */}
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>Vehicle Details</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
+                {/* Vehicle Identification & Basic Details Combined */}
+                <Grid item xs={12} md={8}>
                   <TextField
                     label="VIN"
                     variant="outlined"
@@ -147,9 +147,31 @@ function AddCar() {
                     value={formData.vin}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Year</InputLabel>
+                    <Select
+                      name="year"
+                      value={formData.year}
+                      onChange={handleChange}
+                      required
+                      label="Year"
+                    >
+                      {generateYearOptions().map(year => (
+                        <MenuItem key={year} value={year.toString()}>
+                          {year}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Basic Details Row */}
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Make"
                     variant="outlined"
@@ -158,9 +180,10 @@ function AddCar() {
                     value={formData.make}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Model"
                     variant="outlined"
@@ -169,9 +192,10 @@ function AddCar() {
                     value={formData.model}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Trim"
                     variant="outlined"
@@ -179,33 +203,24 @@ function AddCar() {
                     name="trim"
                     value={formData.trim}
                     onChange={handleChange}
+                    size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Year"
-                    variant="outlined"
-                    fullWidth
-                    name="year"
-                    type="number"
-                    value={formData.year}
-                    onChange={handleChange}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
+
+                {/* Specifications Row */}
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Mileage"
                     variant="outlined"
                     fullWidth
                     name="mileage"
-                    type="number"
                     value={formData.mileage}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Color"
                     variant="outlined"
@@ -214,28 +229,10 @@ function AddCar() {
                     value={formData.color}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
                 </Grid>
-
-                {/* Pending Issues */}
-                <Grid item xs={12} sm={8}>
-                  <TextField
-                    label="Pending Issues"
-                    variant="outlined"
-                    fullWidth
-                    name="pending_issues"
-                    value={formData.pending_issues}
-                    onChange={handleChange}
-                    multiline
-                    rows={3}
-                  />
-                </Grid>
-
-                {/* Financial Details */}
-                <Grid item xs={12} mt={2}>
-                  <Typography variant="h6" gutterBottom>Financial Details</Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} md={4}>
                   <TextField
                     label="Purchase Price"
                     variant="outlined"
@@ -245,67 +242,33 @@ function AddCar() {
                     value={formData.purchase_price}
                     onChange={handleChange}
                     required
+                    size="small"
                   />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    label="Sale Price"
-                    variant="outlined"
-                    fullWidth
-                    name="sale_price"
-                    type="number"
-                    value={formData.sale_price}
-                    onChange={handleChange}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id="sale-type-label">Purchase Fund Source</InputLabel>
-                    <Select
-                      labelId="sale-type-label"
-                      label="Purchase Fund Source"
-                      name="sale_type"
-                      value={formData.sale_type}
-                      onChange={handleChange}
-                      required
-                    >
-                      <MenuItem value="floor">Floor</MenuItem>
-                      <MenuItem value="dealer">Dealer</MenuItem>
-                      <MenuItem value="consignment">Consignment</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id="finance-type-label">Sale Type</InputLabel>
-                    <Select
-                      labelId="finance-type-label"
-                      label="Sale Type"
-                      name="finance_type"
-                      value={formData.finance_type}
-                      onChange={handleChange}
-                      required
-                    >
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="finance">Finance</MenuItem>
-                      <MenuItem value="bph">BPH</MenuItem>
-                      <MenuItem value="outside finance">Outside Finance</MenuItem>
-                      <MenuItem value="na">N/A</MenuItem>
-                    </Select>
-                  </FormControl>
                 </Grid>
 
-                {/* Title Received Dropdown */}
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id="title-received-label">Title Received?</InputLabel>
+                <Grid item xs={12} md={12}>
+                  <TextField
+                    label="Purchaser"
+                    variant="outlined"
+                    fullWidth
+                    name="purchaser"
+                    value={formData.purchaser}
+                    onChange={handleChange}
+                    required
+                    size="small"
+                  />
+                </Grid>
+
+                {/* Status Row */}
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Title Received?</InputLabel>
                     <Select
-                      labelId="title-received-label"
-                      label="Title Received?"
                       name="title_received"
                       value={formData.title_received}
                       onChange={handleChange}
                       required
+                      label="Title Received?"
                     >
                       <MenuItem value="yes">Yes</MenuItem>
                       <MenuItem value="no">No</MenuItem>
@@ -313,97 +276,55 @@ function AddCar() {
                     </Select>
                   </FormControl>
                 </Grid>
-
-                {/* Inspection Completed Dropdown */}
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id="inspection-received-label">Inspection Completed?</InputLabel>
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Inspection Done?</InputLabel>
                     <Select
-                      labelId="inspection-received-label"
-                      label="inspection Done?"
                       name="inspection_received"
                       value={formData.inspection_received}
                       onChange={handleChange}
                       required
+                      label="Inspection Done?"
                     >
                       <MenuItem value="yes">Yes</MenuItem>
                       <MenuItem value="no">No</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
-
-                {/* Posted Online Dropdown */}
-                <Grid item xs={12} sm={4}>
-                  <FormControl fullWidth variant="outlined">
-                    <InputLabel id="posted-online-label">Posted Online?</InputLabel>
+                <Grid item xs={12} md={3}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Posted Online?</InputLabel>
                     <Select
-                      labelId="posted-online-label"
-                      label="Posted Online?"
                       name="posted_online"
                       value={formData.posted_online}
                       onChange={handleChange}
                       required
+                      label="Posted Online?"
                     >
                       <MenuItem value={true}>Posted</MenuItem>
                       <MenuItem value={false}>Not Posted</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
-
-                {/* Purchase Date and Closing Statement */}
-                <Grid item xs={12} sm={4}>
-                  <label>Purchase Date</label>
+                <Grid item xs={12} md={3}>
                   <DatePicker
                     selected={formData.purchase_date}
                     onChange={handleDateChange}
                     dateFormat="MM/dd/yyyy"
-                    customInput={<TextField variant="outlined" fullWidth />}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={8}>
-                  <TextField
-                    label="Closing Statement"
-                    variant="outlined"
-                    fullWidth
-                    name="closing_statement"
-                    value={formData.closing_statement}
-                    onChange={handleChange}
-                    multiline
-                    rows={4}
+                    customInput={
+                      <TextField 
+                        label="Purchase Date" 
+                        variant="outlined" 
+                        fullWidth 
+                        size="small"
+                      />
+                    }
                   />
                 </Grid>
 
-                {/* Purchaser */}
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Purchaser"
-                    name="purchaser"
-                    value={formData.purchaser}
-                    onChange={handleChange}
-                    fullWidth
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        '& fieldset': {
-                          borderColor: 'rgba(0, 0, 0, 0.23)',
-                          transition: 'border-color 0.3s',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                      },
-                    }}
-                  />
-                </Grid>
-
-                {/* Submit Button with enhanced styling */}
-                <Grid item xs={12} mt={4} mb={2}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
+                {/* Submit Button */}
+                <Grid item xs={12}>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       variant="contained"
                       type="submit"
@@ -412,13 +333,14 @@ function AddCar() {
                         background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                         color: 'white',
                         fontWeight: 'bold',
-                        padding: '15px',
-                        fontSize: '1.1rem',
-                        borderRadius: '12px',
+                        padding: '12px',
+                        fontSize: '1rem',
+                        borderRadius: '8px',
                         textTransform: 'none',
-                        boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                        boxShadow: '0 4px 15px rgba(33, 203, 243, .3)',
                         '&:hover': {
                           background: 'linear-gradient(45deg, #2196F3 60%, #21CBF3 90%)',
+                          boxShadow: '0 6px 20px rgba(33, 203, 243, .4)',
                         },
                       }}
                     >

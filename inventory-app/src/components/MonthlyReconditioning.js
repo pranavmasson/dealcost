@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -17,6 +17,8 @@ import {
 import { motion } from 'framer-motion';
 import { useTheme } from '@mui/material/styles';
 import BuildIcon from '@mui/icons-material/Build';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import Button from '@mui/material/Button';
 
 function MonthlyReconditioning() {
   const location = useLocation();
@@ -25,6 +27,7 @@ function MonthlyReconditioning() {
   const [error, setError] = useState(null);
   const [reconditioning, setReconditioning] = useState([]);
   const { month, year } = location.state || {};
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchReconditioning = async () => {
@@ -75,6 +78,14 @@ function MonthlyReconditioning() {
       transition={{ duration: 0.5 }}
     >
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/home')}
+          sx={{ mb: 2, fontSize: '0.7rem' }}
+        >
+          Back to Home
+        </Button>
+        
         <Paper
           elevation={0}
           sx={{

@@ -93,16 +93,6 @@ function EditCar({ open, onClose, vin }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleToggleSaleStatus = () => {
-    const isSold = formData.sale_status === 'sold';
-
-    setFormData({
-      ...formData,
-      sale_status: isSold ? 'available' : 'sold',
-      date_sold: isSold ? null : new Date(),
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -699,33 +689,37 @@ function EditCar({ open, onClose, vin }) {
                             />
                           </Grid>
                           {formData.sale_status === 'sold' && (
-                            <Grid item xs={12}>
+                            <Grid item xs={12} sm={4}>
                               <DatePicker
                                 selected={formData.date_sold}
                                 onChange={(date) => handleDateChange('date_sold', date)}
                                 customInput={<TextField label="Date Sold" fullWidth />}
-                                sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                      borderColor: 'rgba(0, 0, 0, 0.23)',
-                                      transition: 'border-color 0.3s',
-                                    },
-                                    '&:hover fieldset': {
-                                      borderColor: 'primary.main',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                      borderColor: 'primary.main',
-                                    },
-                                  },
-                                }}
+                                dateFormat="MM/dd/yyyy"
                               />
                             </Grid>
                           )}
-                          <Grid item xs={12}>
-                            <FormControlLabel
-                              control={<Switch checked={formData.sale_status === 'sold'} onChange={handleToggleSaleStatus} />}
-                              label={formData.sale_status === 'sold' ? 'Sold' : 'Available'}
-                            />
+                          <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth variant="outlined">
+                              <InputLabel id="sale-status-label">Sale Status</InputLabel>
+                              <Select
+                                labelId="sale-status-label"
+                                label="Sale Status"
+                                name="sale_status"
+                                value={formData.sale_status}
+                                onChange={(e) => {
+                                  const newStatus = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    sale_status: newStatus,
+                                    date_sold: newStatus === 'sold' ? new Date() : null
+                                  });
+                                }}
+                                required
+                              >
+                                <MenuItem value="available">Available</MenuItem>
+                                <MenuItem value="sold">Sold</MenuItem>
+                              </Select>
+                            </FormControl>
                           </Grid>
                           <Grid item xs={12} sm={4}>
                             <FormControl fullWidth variant="outlined">
