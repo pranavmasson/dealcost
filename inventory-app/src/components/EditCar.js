@@ -40,7 +40,7 @@ function EditCar({ open, onClose, vin }) {
     sale_price: '',
     purchaser: '',
     sale_type: 'na',
-    finance_type: 'na',
+    finance_type: '',
     sale_status: 'available',
     purchase_date: new Date(),
     title_received: 'na',

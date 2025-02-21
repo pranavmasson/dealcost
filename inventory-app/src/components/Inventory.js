@@ -161,11 +161,18 @@ function Inventory() {
   const calculateReconditioningCosts = async (inventory, username) => {
     const costs = {};
     for (const item of inventory) {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/reports?vin=${item.vin}&username=${username}`);
-      const data = await response.json();
-      if (response.ok) {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/reports?vin=${item.vin}&username=${username}`);
+        if (!response.ok) {
+          console.error(`Failed to fetch reconditioning costs for VIN ${item.vin}: ${response.statusText}`);
+          continue;
+        }
+        const data = await response.json();
         const totalCost = data.records.reduce((sum, record) => sum + parseFloat(record.cost || 0), 0);
         costs[item.vin] = totalCost;
+      } catch (error) {
+        console.error(`Error fetching reconditioning costs for VIN ${item.vin}:`, error);
+        costs[item.vin] = 0;
       }
     }
     setReconditioningCosts(costs);
@@ -317,7 +324,7 @@ function Inventory() {
         item.color,
         item.vin,
         item.purchase_price,
-        item.purchase_fund || 'N/A',
+        item.finance_type || 'N/A',
         item.title_received,
         item.inspection_received,
         reconditionCost,
@@ -377,7 +384,7 @@ function Inventory() {
         item.color,
         item.vin,
         item.purchase_price,
-        item.purchase_fund || 'N/A',
+        item.finance_type || 'N/A',
         item.title_received,
         item.inspection_received,
         reconditionCost,
@@ -453,7 +460,7 @@ function Inventory() {
           item.color || 'N/A',
           item.vin || 'N/A',
           formatPrice(item.purchase_price),
-          item.purchase_fund || 'N/A',
+          item.finance_type || 'N/A',
           item.title_received || 'N/A',
           item.inspection_received || 'N/A',
           formatPrice(reconditionCost),
@@ -531,7 +538,7 @@ function Inventory() {
         15: { cellWidth: 40 }, // Sale Price
         16: { cellWidth: 40 }, // Profit
         17: { cellWidth: 35 }, // Status
-        18: { cellWidth: 45 }, // Pending Issues
+        18: { cellWidth: 35 }, // Pending Issues
         19: { cellWidth: 45 }  // Closing Statement
       },
       margin: { left: margin, right: margin },
@@ -888,29 +895,29 @@ function Inventory() {
                 '& .MuiTableCell-head': {
                   minWidth: 'auto',
                 },
-                '& .MuiTableCell-root:nth-of-type(1)': { width: '35px' },  // Days in Inventory
-                '& .MuiTableCell-root:nth-of-type(2)': { width: '60px' },  // Purchase Date
-                '& .MuiTableCell-root:nth-of-type(3)': { width: '35px' },  // Year
-                '& .MuiTableCell-root:nth-of-type(4)': { width: '50px' },  // Make
-                '& .MuiTableCell-root:nth-of-type(5)': { width: '50px' },  // Model
-                '& .MuiTableCell-root:nth-of-type(6)': { width: '40px' },  // Trim
-                '& .MuiTableCell-root:nth-of-type(7)': { width: '45px' },  // Mileage
-                '& .MuiTableCell-root:nth-of-type(8)': { width: '45px' },  // Color
-                '& .MuiTableCell-root:nth-of-type(9)': { width: '80px' },  // VIN
-                '& .MuiTableCell-root:nth-of-type(10)': { width: '60px' }, // Purchase Price
-                '& .MuiTableCell-root:nth-of-type(11)': { width: '60px' }, // Purchase Fund
-                '& .MuiTableCell-root:nth-of-type(12)': { width: '35px' }, // Title
-                '& .MuiTableCell-root:nth-of-type(13)': { width: '45px' }, // Inspection
-                '& .MuiTableCell-root:nth-of-type(14)': { width: '50px' }, // Posted Online
-                '& .MuiTableCell-root:nth-of-type(15)': { width: '55px' }, // Reconditioning Cost
-                '& .MuiTableCell-root:nth-of-type(16)': { width: '60px' }, // Total Cost
-                '& .MuiTableCell-root:nth-of-type(17)': { width: '60px' }, // Purchaser
-                '& .MuiTableCell-root:nth-of-type(18)': { width: '80px' }, // Pending Issues
-                '& .MuiTableCell-root:nth-of-type(19)': { width: '60px' }, // Date Sold
-                '& .MuiTableCell-root:nth-of-type(20)': { width: '60px' }, // Sale Price
-                '& .MuiTableCell-root:nth-of-type(21)': { width: '60px' }, // Profit
-                '& .MuiTableCell-root:nth-of-type(22)': { width: '80px' }, // Closing Statement
-                '& .MuiTableCell-root:nth-of-type(23)': { width: '120px' }, // Actions
+                '& .MuiTableCell-root:nth-of-type(1)': { width: '35px' },
+                '& .MuiTableCell-root:nth-of-type(2)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(3)': { width: '35px' },
+                '& .MuiTableCell-root:nth-of-type(4)': { width: '50px' },
+                '& .MuiTableCell-root:nth-of-type(5)': { width: '50px' },
+                '& .MuiTableCell-root:nth-of-type(6)': { width: '40px' },
+                '& .MuiTableCell-root:nth-of-type(7)': { width: '45px' },
+                '& .MuiTableCell-root:nth-of-type(8)': { width: '45px' },
+                '& .MuiTableCell-root:nth-of-type(9)': { width: '80px' },
+                '& .MuiTableCell-root:nth-of-type(10)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(11)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(12)': { width: '35px' },
+                '& .MuiTableCell-root:nth-of-type(13)': { width: '45px' },
+                '& .MuiTableCell-root:nth-of-type(14)': { width: '50px' },
+                '& .MuiTableCell-root:nth-of-type(15)': { width: '55px' },
+                '& .MuiTableCell-root:nth-of-type(16)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(17)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(18)': { width: '35px' },
+                '& .MuiTableCell-root:nth-of-type(19)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(20)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(21)': { width: '60px' },
+                '& .MuiTableCell-root:nth-of-type(22)': { width: '80px' },
+                '& .MuiTableCell-root:nth-of-type(23)': { width: '120px' },
               }}
             >
               {loading ? (
@@ -993,8 +1000,9 @@ function Inventory() {
                           <TableCell className="text-cell">{item.color || 'N/A'}</TableCell>
                           <TableCell className="text-cell">{item.vin}</TableCell>
                           <TableCell className="number-cell">{formatPrice(item.purchase_price)}</TableCell>
-                          <TableCell className="text-cell">{item.purchase_fund || 'N/A'}</TableCell>
-                          <TableCell align="center">
+                          <TableCell className="text-cell">
+                            {item.sale_type ? item.sale_type.charAt(0).toUpperCase() + item.sale_type.slice(1) : 'N/A'}
+                          </TableCell>                          <TableCell align="center">
                             <Typography
                               variant="body2"
                               sx={{
@@ -1043,7 +1051,7 @@ function Inventory() {
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  maxWidth: 200,
+                                  maxWidth: '90px',
                                   color: item.pending_issues ? '#f44336' : 'inherit',
                                   fontSize: filterSold === 'available' ? '0.7rem' : '0.75rem',
                                   fontWeight: 'medium'
@@ -1090,7 +1098,7 @@ function Inventory() {
                                 size="small"
                                 onClick={() => handleDealCost(item.vin)}
                               >
-                                DEAL
+                                ADD COST
                               </Button>
                               <Button 
                                 variant="outlined" 
