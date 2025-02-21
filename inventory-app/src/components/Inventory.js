@@ -817,7 +817,7 @@ function Inventory() {
                     sx={{ width: '100px' }}
                   >
                     <MenuItem value="">All Years</MenuItem>
-                    {[2024, 2023, 2022, 2021].map((year) => (
+                    {[2027, 2026, 2025, 2024, 2023, 2022, 2021].map((year) => (
                       <MenuItem key={year} value={year}>{year}</MenuItem>
                     ))}
                   </Select>
